@@ -1,0 +1,38 @@
+[project]
+name = "ropecker-trace"
+version = "0.1.0"
+description = "ROPecker(NDSS 2014) 탐지 로직을 실행 트레이스 기반 사용자 공간 도구로 재현 — 소프트웨어및시스템보안 2026 6조"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "capstone>=5.0.1,<6",
+    "pyelftools>=0.31",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "ropgadget>=7.4",
+]
+
+[tool.uv]
+# 설치 가능한 패키지로 만들지 않고, 저장소 루트에서 `python -m ropecker`로 실행한다.
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+# E/F: 기본, I: import 정렬, PLW1514: open()에 encoding 미지정 금지(Windows cp949 대비)
+select = ["E", "F", "I", "PLW1514"]
+# 한글은 화면 폭 2칸으로 세어져 줄 길이 규칙이 잡음만 내므로 끈다
+ignore = ["E501"]
+preview = true
+explicit-preview-rules = true

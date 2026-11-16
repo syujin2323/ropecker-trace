@@ -1,0 +1,11 @@
+# 모든 텍스트 파일을 LF로 고정한다.
+# Windows(Git for Windows의 core.autocrlf)에서 받아도 .sh가 CRLF로 바뀌어 /bin/bash^M 오류가 나지 않게 한다.
+* text=auto eol=lf
+
+# 바이너리: 줄바꿈 변환·diff 금지
+*.gz binary
+*.png binary
+*.pdf binary
+*.docx binary
+target/bin/** binary
+target/sysroot/** binary
