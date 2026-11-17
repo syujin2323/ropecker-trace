@@ -1,0 +1,6 @@
+# 빌드 환경: ubuntu:22.04@sha256:9abcaffc92a5279fff3a6a41635c0800ea33e528425fb389658806476e7defde
+# gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+# libc6 2.35-0ubuntu3.18
+5abebeea86f4a80a402eebfbc81564f53155db87fcc995c68b5d500be97ce062  bin/rop_vault
+a87fec14aeedb537d0b2a80c6a3308b82e774d86541dff4654a75ab1fd22df0a  sysroot/lib64/ld-linux-x86-64.so.2
+4ebb1967c395ca547dcfeaeeab7a2819724604a331aede44e8a749a7e1a4628e  sysroot/lib/x86_64-linux-gnu/libc.so.6
