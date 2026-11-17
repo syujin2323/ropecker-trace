@@ -1,0 +1,4 @@
+$ python -m ropecker --trace traces/synth/f1-normal.jsonl.gz --window 8192 --threshold 11 --cmp ge --no-check --json results/w12/runs/f1-normal-synth.before.json
+판정: 미검사 (--no-check, 보호 적용 전)
+실행 스텝 8, 트레이스 종료 exit:0
+[종료 코드 0]
