@@ -86,12 +86,22 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
  "chain_len": 17, "past_len": 1, "future_len": 16,
  "gadgets": [{"addr": "0x…", "module": "libc.so.6", "off": "0x…", "from": "past|future"}],
  "checkpoint": {"step": 3, "pc": "0x…", "reason": "window|syscall:59"},
- "checks": [{"step": 3, "reason": "window", "past": 1, "future": 16, "total": 17}],   // W12: 방어자 판정 로그
+ "checks": [{"step": 0, "pc": "0x…", "reason": "window", "past": 0, "future": 0, "total": 0},
+            {"step": 3, "pc": "0x…", "reason": "window", "past": 1, "future": 16, "total": 17}],  // 방어자 판정 로그
  "n_checkpoints": 2, "steps": 24, "trace_end": "syscall:59",                         // 실행 결과(공격자 관점)
  "params": {"window": 8192, "threshold": 11, "cmp": "ge", "lbr_depth": 16, "align_check": false, "check": true}}
 ```
 
 종료 코드: 0 정상(또는 미검사), 1 ROP, 2 오류·미구현.
+
+- **`checks`(방어자 판정 로그):** 체크포인트마다 한 항목을 스텝 순서로 쌓는다.
+  - 키는 `step`, `pc`, `reason`(`window` | `syscall:<번호>`), `past`, `future`, `total`(= past + future)이다.
+  - ROP가 나오면 그 항목이 마지막이다(거기서 멈춘다).
+  - `n_checkpoints`는 항목 수와 같고, `--no-check`이면 빈 목록이다.
+- **요약 값:** `chain_len`·`past_len`·`future_len`·`checkpoint`는 `checks`의 한 항목에서 가져온다.
+  - ROP면 마지막 항목, 정상이면 `total`이 가장 큰 항목(같으면 앞의 것)이다.
+  - 체크포인트가 하나도 없으면 연쇄 값은 0, `checkpoint`는 null이다.
+- **로그 구분(12주차):** 실행 결과(공격자 관점)는 `steps`·`trace_end`, 방어자 판정은 `verdict`·`checks`다. 화면에는 `--verbose`(`-v`)일 때 판정 로그를 함께 출력한다.
 
 ## 6. 동결 사례와 트레이스 파일
 

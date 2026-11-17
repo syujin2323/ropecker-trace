@@ -56,3 +56,24 @@ def test_frozen_case(case, check, kind):
 
     problems = judge(check["expect"], _detect(path))
     assert not problems, f"{case['구분']}: {case['기대 결과']} → {problems}"
+
+
+SYNTH_IDS = [chk["id"] for _, chk in iter_checks(DATA)]
+
+
+@pytest.mark.parametrize("check_id", SYNTH_IDS)
+def test_result_log_contract(check_id):
+    """방어자 판정 로그(checks)가 결과 요약 값과 맞는지 확인한다(docs/design.md 5절)."""
+    res = _detect(ROOT / trace_path(check_id, "synth"))
+    checks = res["checks"]
+    assert res["n_checkpoints"] == len(checks)
+    steps = [c["step"] for c in checks]
+    assert steps == sorted(set(steps)), "체크포인트는 스텝 순서로 한 번씩"
+    for c in checks:
+        assert {"step", "pc", "reason", "past", "future", "total"} <= set(c)
+        assert c["total"] == c["past"] + c["future"]
+    if res["verdict"] == "ROP":
+        last = checks[-1]
+        assert (last["step"], last["total"]) == (res["checkpoint"]["step"], res["chain_len"])
+    else:
+        assert res["chain_len"] == max((c["total"] for c in checks), default=0)
