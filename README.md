@@ -44,8 +44,18 @@ uv run python -m ropecker --trace traces/synth/f2-violation.jsonl.gz --window 81
 ```
 
 - `.venv`를 활성화했다면 보고서 문구 그대로 `python -m ropecker --trace t.log --window 8192 --threshold 11`도 됩니다.
-- 결과 JSON 저장은 `--json result.json`, 논문 기준(연쇄 > T) 비교는 `--cmp gt`
+- 결과 JSON 저장은 `--json result.json`, 체크포인트별 방어자 판정 로그 출력은 `--verbose`, 논문 기준(연쇄 > T) 비교는 `--cmp gt`
 - 합성 트레이스 4개(`traces/synth/`)는 11주차 동결 사례의 기준 입력입니다. `uv run python -m ropecker.synth`로 언제든 같은 파일이 다시 만들어집니다.
+
+## 보호 적용 전·후 비교
+
+```bash
+uv run python scripts/run_cases.py
+```
+
+- 동결 사례의 트레이스(합성 4개 + 실제 수집)를 보호 적용 전(`--no-check`)과 후(기본 실행 + `--verbose`)로 한 번씩 실행합니다.
+- 결과는 `results/w12/compare.md`(비교표)와 `results/w12/runs/`(콘솔 로그·결과 JSON)에 남습니다. 표의 '일치'는 `uv run pytest`의 동결 사례 테스트와 같은 기준입니다.
+- 아직 stub인 레인이 있으면 '적용 후' 열에 "미구현"이 나옵니다. 레인이 구현되면 다시 실행만 하면 됩니다.
 
 ## 진행 현황
 
@@ -60,7 +70,7 @@ uv run python -m ropecker --trace traces/synth/f2-violation.jsonl.gz --window 81
 | `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ⬜ | W12 |
 | `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ⬜ | W12 |
 | `detector.py` 통합 판정 | past·infra | ⬜ | W12 |
-| `scripts/run_cases.py` 보호 적용 전·후 비교표 | infra | ⬜ | W12 |
+| `scripts/run_cases.py` 보호 적용 전·후 비교표, CLI 판정 로그(`--verbose`) | infra | ✅ 적용 전 실행·비교표 · ⏳ 적용 후 열(레인 구현 뒤 다시 실행) | W12 (11/23) |
 | `experiments/sweep_t.py` T=5~17 실험 | any | ⬜ | W14 |
 
 레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 지금은 xfail이고, 구현이 들어오면 저절로 pass/fail로 바뀝니다.
@@ -68,7 +78,7 @@ uv run python -m ropecker --trace traces/synth/f2-violation.jsonl.gz --window 81
 ## 저장소 구조
 
 ```
-ropecker/        분석기(순수 Python) — model.py가 레인 사이의 계약
+ropecker/        분석기(순수 Python) — model.py가 레인 사이의 계약, cases.py가 동결 사례 판정 기준
 tests/           pytest — test_frozen.py가 11주차 동결 사례 실행
 cases/           frozen.json(11주차 동결 3사례, 해시로 잠금), extra/(13주차 추가·반례)
 traces/          synth/(합성, 정답 포함) real/(실제 수집)
@@ -76,6 +86,8 @@ data/gadgets/    모듈별 gadget DB
 target/          대상 바이너리 소스·빌드 스크립트·바이너리·sysroot
 collect/         x86 실행·트레이스 수집(Docker)
 experiments/     T 변화 실험
+scripts/         run_cases.py(보호 적용 전·후 비교표)
+results/         w12/compare.md(비교표), w12/runs/(콘솔 로그·결과 JSON)
 docs/            design.md(정의·형식), weekly/(주간보고서 원고), ai-log.md, final_report.md
 ```
 
