@@ -16,6 +16,7 @@
 | 대상 프로그램 | `target/bin/rop_vault` — 6주차 실습 소스, `ubuntu:22.04`(amd64) gcc 11.4.0, `-O0 -fno-stack-protector -no-pie -z noexecstack` |
 | 대상 라이브러리 | `target/sysroot` — glibc 2.35-0ubuntu3.18 (빌드 이미지에서 추출, 해시는 `target/SHA256SUMS`) |
 | 대상 빌드·트레이스 수집 | Docker (macOS는 OrbStack/Docker Desktop, Windows는 Docker Desktop WSL2). 분석·테스트에는 필요 없음 |
+| 트레이스 수집 이미지 | `collect/Dockerfile` — debian bookworm-slim(digest 고정), qemu-user 7.2, gdb-multiarch 13.1 |
 
 모든 경로는 저장소 루트 기준 상대 경로입니다.
 
@@ -54,7 +55,7 @@ uv run python -m ropecker --trace traces/synth/f2-violation.jsonl.gz --window 81
 | `image.py` 모듈 적재·명령 분류 | infra | ✅ M0 | — |
 | `synth.py` 합성 트레이스 4개(동결 사례 기준) | infra | ✅ M0 | — |
 | `target/` 빌드·sysroot | infra | ✅ M0 | — |
-| `collect/` 수집 이미지·`gdb_trace.py` | collect | ⏳ 작성 중(다음 PR에서 검증 후 추가) | W12 (11/23) |
+| `collect/` 수집 이미지·`gdb_trace.py` | collect | ✅ 정상 입력 실제 트레이스(재수집 시 같은 파일) · ⏳ 위반 입력 | W12 (11/23) |
 | `gadgetdb.py` gadget DB | db | ⬜ | W12 |
 | `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ⬜ | W12 |
 | `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ⬜ | W12 |
@@ -99,7 +100,7 @@ gh pr merge --auto --rebase           # CI 3 OS가 통과하면 자동 병합(�
 
 ## 트레이스 수집
 
-x86-64 대상 실행은 `collect/`의 Docker 이미지 안에서만 합니다(qemu-user gdbstub + gdb Python API). 수집한 트레이스는 커밋하므로, Docker가 없어도 분석과 테스트는 모두 할 수 있습니다. 자세한 내용은 [collect/README.md](collect/README.md)에 있습니다. (수집 스크립트는 맥·Windows에서 검증한 뒤 다음 PR로 들어옵니다. 아래 명령은 그 이후 기준입니다.)
+x86-64 대상 실행은 `collect/`의 Docker 이미지 안에서만 합니다(qemu-user gdbstub + gdb Python API). 수집한 트레이스는 커밋하므로, Docker가 없어도 분석과 테스트는 모두 할 수 있습니다. 자세한 내용은 [collect/README.md](collect/README.md)에 있습니다. 같은 입력이면 누가 수집해도 같은 파일이 나오므로, 다시 수집한 뒤 `git status`에 `traces/real/` 변경이 없으면 재현된 것입니다(맥 OrbStack에서 확인, Windows는 W12 재현 확인 항목).
 
 ```bash
 docker build -t rc-collect collect/

@@ -99,7 +99,7 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
 
 | check id | 기준 트레이스(합성) | 실제 수집 트레이스 |
 |---|---|---|
-| f1-normal | traces/synth/f1-normal.jsonl.gz | traces/real/f1-normal.jsonl.gz (W12) |
+| f1-normal | traces/synth/f1-normal.jsonl.gz | traces/real/f1-normal.jsonl.gz (W12 수집, 9,368스텝) |
 | f2-violation | traces/synth/f2-violation.jsonl.gz | traces/real/f2-violation.jsonl.gz (W12 시도) |
 | f3-boundary-11 | traces/synth/f3-boundary-11.jsonl.gz | — |
 | f3-boundary-10 | traces/synth/f3-boundary-10.jsonl.gz | — |
@@ -119,3 +119,4 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
   - 과목이 6주차에 배포한 libc는 3.15라 libc 내부 오프셋은 다르다. 하지만 트레이스·gadget DB·수집이 모두 이 sysroot를 기준으로 하므로 서로 일관된다.
   - rop_vault 자체의 주소는 과목 원본과 같다.
 - 수집: `collect/` 이미지(debian bookworm + qemu-user + gdb-multiarch)에서 `qemu-x86_64 -L target/sysroot -g <port>`에 gdb Python API로 붙어 `main`부터 한 명령씩 실행한다. Debian 크로스 libc(2.36)는 쓰지 않는다.
+  - 대상은 빈 환경 변수(`env -i`)와 고정 시드(`qemu -seed 1`)로 실행한다. 환경 변수 길이가 argv 문자열 주소를 바꿔 libc 경로가 달라지고, AT_RANDOM이 스택 값을 바꾸기 때문이다. 그래서 같은 입력이면 같은 트레이스 파일이 나온다(`collect/README.md` "재현성").
