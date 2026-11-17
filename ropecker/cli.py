@@ -43,10 +43,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--lbr-depth", type=int, default=16, help="과거 연쇄에 쓰는 LBR 깊이 (기본 16)")
     p.add_argument("--align-check", action="store_true", help="비정렬 gadget을 만나면 즉시 ROP로 판정")
-    p.add_argument("--no-check", action="store_true", help="탐지하지 않고 실행 요약만 출력 (보호 적용 전 비교용)")
+    p.add_argument(
+        "--no-check", action="store_true", help="탐지하지 않고 실행 요약만 출력 (보호 적용 전 비교용)"
+    )
     p.add_argument("--db-dir", default="data/gadgets", help="gadget DB 폴더 (기본 data/gadgets)")
     p.add_argument("--root", default=".", help="트레이스 헤더의 모듈 경로를 찾을 기준 폴더 (기본 현재 폴더)")
     p.add_argument("--json", metavar="PATH", help="결과 JSON을 이 파일에도 저장")
+    p.add_argument(
+        "-v", "--verbose", action="store_true", help="체크포인트별 방어자 판정 로그(checks)도 출력"
+    )
     p.add_argument("--version", action="version", version=f"ropecker-trace {__version__}")
     return p
 
@@ -81,6 +86,7 @@ def unchecked_result(tr: Trace, params: Params) -> dict:
         "future_len": None,
         "gadgets": [],
         "checkpoint": None,
+        "checks": [],
         "n_checkpoints": 0,
         "steps": len(tr.steps),
         "trace_end": _end_str(tr.end),
@@ -89,7 +95,21 @@ def unchecked_result(tr: Trace, params: Params) -> dict:
     }
 
 
-def _print_summary(result: dict) -> None:
+def _print_checks(result: dict) -> None:
+    """방어자 판정 로그: 체크포인트마다 과거·미래 연쇄와 합, 그 합이 ROP 기준을 넘는지."""
+    checks = result.get("checks") or []
+    p = result["params"]
+    rule = Params(threshold=p["threshold"], cmp=p["cmp"])
+    print(f"판정 로그 (체크포인트 {len(checks)}개)")
+    for c in checks:
+        mark = "ROP" if rule.is_rop(c["total"]) else "-"
+        print(
+            f"  스텝 {c['step']:>7}  pc {c['pc']}  {c['reason']:<10}  "
+            f"과거 {c['past']} + 미래 {c['future']} = {c['total']}  {mark}"
+        )
+
+
+def _print_summary(result: dict, verbose: bool = False) -> None:
     verdict = result["verdict"]
     if verdict == VERDICT_UNCHECKED:
         print("판정: 미검사 (--no-check, 보호 적용 전)")
@@ -106,6 +126,8 @@ def _print_summary(result: dict) -> None:
         for g in result.get("gadgets", []):
             where = f"{g['module']}+{g['off']}" if g.get("module") else "?"
             print(f"  gadget {g['addr']} ({where}, {g.get('from', '?')})")
+        if verbose:
+            _print_checks(result)
     print(f"실행 스텝 {result['steps']}, 트레이스 종료 {result['trace_end']}")
 
 
@@ -150,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"오류: {e}", file=sys.stderr)
             return EXIT_ERROR
 
-    _print_summary(result)
+    _print_summary(result, verbose=args.verbose)
     if args.json:
         with open(args.json, "w", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
