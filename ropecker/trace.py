@@ -24,8 +24,31 @@ def _open_text(path: Path, mode: str):
             return io.TextIOWrapper(gzip.open(path, "rb"), encoding="utf-8")
         return open(path, encoding="utf-8")
     if path.suffix == ".gz":
-        return io.TextIOWrapper(gzip.open(path, "wb"), encoding="utf-8", newline="\n")
+        # 파일 이름·시각을 헤더에 넣지 않아(mtime=0) 같은 내용이면 같은 바이트가 나온다(git diff 잡음 방지)
+        raw = gzip.GzipFile(filename="", mode="wb", fileobj=open(path, "wb"), mtime=0)
+        return io.TextIOWrapper(_ClosingGzip(raw), encoding="utf-8", newline="\n")
     return open(path, "w", encoding="utf-8", newline="\n")
+
+
+class _ClosingGzip(io.RawIOBase):
+    """GzipFile을 닫을 때 밑에 있는 파일 객체도 함께 닫는다."""
+
+    def __init__(self, gz: gzip.GzipFile):
+        self._gz = gz
+
+    def writable(self) -> bool:
+        return True
+
+    def write(self, b) -> int:
+        return self._gz.write(b)
+
+    def close(self) -> None:
+        if not self.closed:
+            fileobj = self._gz.fileobj
+            self._gz.close()
+            if fileobj is not None:
+                fileobj.close()
+        super().close()
 
 
 def _step_from_json(obj: dict) -> Step:
