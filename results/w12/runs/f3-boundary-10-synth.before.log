@@ -1,0 +1,4 @@
+$ python -m ropecker --trace traces/synth/f3-boundary-10.jsonl.gz --window 8192 --threshold 11 --cmp ge --no-check --json results/w12/runs/f3-boundary-10-synth.before.json
+판정: 미검사 (--no-check, 보호 적용 전)
+실행 스텝 17, 트레이스 종료 max_steps
+[종료 코드 0]
