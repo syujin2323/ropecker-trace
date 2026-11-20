@@ -1,0 +1,6 @@
+=====================================================
+        VaultGuard RTL Appliance  (Week06 ROP)       
+=====================================================
+ [hint] libc anchor (stdout) : 0x4000a5e780
+ [hint] '/bin/sh' string     : 0x404060
+payload > qemu-x86_64: QEMU: Terminated via GDBstub
