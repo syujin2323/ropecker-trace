@@ -21,6 +21,8 @@ LIBS = {
     "ld-linux-x86-64.so.2": f"{SYSROOT}/lib64/ld-linux-x86-64.so.2",
 }
 PAGE = 4096
+DANGEROUS_SYS = {9, 10, 25, 59}  # mmap, mprotect, mremap, execve (design.md §1)
+STOP_ON_SYS = os.environ.get("RC_STOP_ON_SYS", "1") != "0"
 STACK_QWORDS = 32
 MASK = (1 << 64) - 1
 
@@ -165,6 +167,9 @@ def main():
                 rec["sys"] = reg("rax")
         out.write(json.dumps(rec) + "\n")
         prev_page = pc // PAGE
+        if STOP_ON_SYS and is_syscall and rec.get("sys") in DANGEROUS_SYS:
+            end = {"end": "syscall", "sys": rec["sys"]}
+            break
         try:
             gdb.execute("stepi", to_string=True)
         except gdb.error:
