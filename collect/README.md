@@ -25,6 +25,7 @@ docker run --rm -v "${PWD}:/w" -w /w rc-collect bash collect/run.sh f1-normal
 | 이름 | 입력 | 스텝 | 끝 | 비고 |
 |---|---|---|---|---|
 | f1-normal | `hello` | 9,368 (rop_vault 157, ld.so 4,519, libc 4,692) | exit 0 | syscall: write 9회, read, exit_group. 간접 분기 235개 |
+| f2-violation | ROP 페이로드(72B 패딩+체인) | 8,443 | syscall: 59 (execve) | 위반 사례. syscall write·read 후 execve 도달. buf→RET 72B, ret 슬레드 14+pop rdi/rsi/rax. `make_f2_violation.py --scan`으로 생성 |
 
 ## 동작 방식
 
@@ -46,7 +47,7 @@ docker run --rm -v "${PWD}:/w" -w /w rc-collect bash collect/run.sh f1-normal
   - 그래서 main 진입 후 1,747스텝 뒤부터 pc 열이 갈라졌습니다(9,364 대 9,368 스텝).
 - `-seed 1`: qemu가 실행마다 무작위로 채우던 AT_RANDOM을 고정합니다. 이 값에서 나오는 스택 카나리·포인터 가드가 스택 스냅샷에 나타납니다.
 - gzip은 `mtime=0`으로 저장합니다. qemu·gdb·zlib 버전은 이미지 digest로 고정됩니다.
-- 확인: 맥(OrbStack, arm64)에서 출력 경로를 바꿔 두 번 수집했고 sha256이 같았습니다. Windows 재실행 결과는 `results/w12/repro.md`에 적습니다.
+- 확인: 맥(OrbStack, arm64)과 Windows(Docker Desktop)에서 각각 두 번 수집해 sha256이 같았습니다. 위반 입력(f2-violation)도 Windows에서 두 번 수집해 `git status` 변경 없음(바이트 동일)을 확인했습니다. 상세는 `results/w12/repro.md`.
 
 ## 환경 메모
 
