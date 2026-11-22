@@ -69,6 +69,7 @@ class _Module:
     name: str
     base: int
     segments: list[tuple[int, bytes]]  # (런타임 시작 주소, 바이트)
+    sha256: str = ""  # gadget DB가 같은 파일로 만든 것인지 확인할 때 쓴다
 
 
 class Image:
@@ -91,7 +92,7 @@ class Image:
             if sha256_file(path) != m["sha256"]:
                 raise ValueError(f"{m['name']}: 파일 sha256이 트레이스 헤더와 다릅니다(다른 빌드의 파일)")
             base = parse_addr(m["base"])
-            mods.append(_Module(m["name"], base, [(base + va, data) for va, data in exec_segments(path)]))
+            mods.append(_Module(m["name"], base, [(base + va, data) for va, data in exec_segments(path)], m["sha256"]))
         return cls(mods)
 
     def _find(self, addr: int) -> tuple[_Module, int, bytes] | None:
