@@ -1,0 +1,4 @@
+$ python -m ropecker --trace traces/real/f2-violation.jsonl.gz --window 8192 --threshold 11 --cmp ge --no-check --json results/w12/runs/f2-violation-real.before.json
+판정: 미검사 (--no-check, 보호 적용 전)
+실행 스텝 8443, 트레이스 종료 syscall:59
+[종료 코드 0]
