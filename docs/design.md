@@ -70,11 +70,18 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
 
 ```jsonc
 {"fmt": "ropecker-gadgetdb", "v": 1, "module": "libc.so.6", "sha256": "…", "max_insns": 6}
-{"off": "0x2a3e5", "n": 2, "end": "0x2a3e6", "kind": "ret", "sd": 8, "adv": 16, "aligned": true, "asm": "pop rdi; ret"}
+{"off": "0x2a3e5", "n": 2, "end": "0x2a3e6", "kind": "ret", "sd": 8, "adv": 16, "aligned": false, "asm": "pop rdi; ret"}
 ```
 
+- 생성: `uv run python -m ropecker.gadgetdb` → rop_vault·libc.so.6·ld-linux-x86-64.so.2 세 개(실제 트레이스 헤더의 모듈 전부). 같은 입력이면 같은 바이트(gzip mtime=0). 분석할 때 DB가 없거나 헤더 sha256이 모듈 파일과 다르면 오류로 멈춘다(gadget을 0개로 세는 사고 방지)
 - `off`·`end`: ELF 가상주소. 런타임 주소 = base + off
-- `sd`: gadget 시작 rsp → ret 슬롯 거리(바이트), `adv`: 실행 뒤 rsp 변화량. rsp를 예측할 수 없으면(leave, mov rsp 등) 둘 다 null
+- `kind`: 끝 분기 종류 `ret` / `jmp_ind`(jmp reg·[mem]) / `call_ind`(call reg·[mem]). 논문의 ret-based / jmp-based 구분
+- `aligned`: 실행 세그먼트 시작부터 선형 디스어셈블(objdump 방식, 디코드 실패는 1바이트 건너뜀)한 명령 경계인지. 논문도 정렬 정보는 선택 사항이며 부정확할 수 있다고 본다(VI-A)
+- `sd`: gadget 시작 rsp → ret 슬롯 거리(바이트), `adv`: 실행 뒤 rsp 변화량. **ret gadget만** 계산하고 jmp/call gadget은 둘 다 null
+  - 명령별 rsp 변화: push −8, pop +8, `add/sub rsp, imm` ±imm, `lea rsp, [rsp+disp]` +disp, rsp를 안 쓰는 명령 0
+  - `sd` = ret 앞 명령들의 변화량 합, `adv` = `sd` + ret의 증가량(ret 8, `ret imm16`은 8+imm)
+  - 예: `ret` (0, 8), `pop rdi; ret` (8, 16), `pop rdi; pop rsi; ret` (16, 24). x86-64라 논문(x86-32)의 4바이트 단위가 아니라 8바이트 단위
+  - rsp를 예측할 수 없으면(leave, `pop rsp`, `mov/xchg rsp`, esp·sp에 쓰기, retf 등 스택 피벗) 둘 다 null. 논문 Table II의 "need emulation"에 해당하고, 미래 연쇄는 여기서 멈춘다
 
 ## 5. 결과 v1
 
