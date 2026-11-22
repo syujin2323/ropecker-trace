@@ -65,7 +65,7 @@ uv run python scripts/run_cases.py
 | `image.py` 모듈 적재·명령 분류 | infra | ✅ M0 | — |
 | `synth.py` 합성 트레이스 4개(동결 사례 기준) | infra | ✅ M0 | — |
 | `target/` 빌드·sysroot | infra | ✅ M0 | — |
-| `collect/` 수집 이미지·`gdb_trace.py` | collect | ✅ 정상 입력 실제 트레이스(재수집 시 같은 파일) · ⏳ 위반 입력 | W12 (11/23) |
+| `collect/` 수집 이미지·`gdb_trace.py` | collect | ✅ 정상·위반 입력 실제 트레이스(재수집 시 같은 파일) | W12 (11/23) |
 | `gadgetdb.py` gadget DB | db | ⬜ | W12 |
 | `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ⬜ | W12 |
 | `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ⬜ | W12 |
@@ -112,7 +112,7 @@ gh pr merge --auto --rebase           # CI 3 OS가 통과하면 자동 병합(�
 
 ## 트레이스 수집
 
-x86-64 대상 실행은 `collect/`의 Docker 이미지 안에서만 합니다(qemu-user gdbstub + gdb Python API). 수집한 트레이스는 커밋하므로, Docker가 없어도 분석과 테스트는 모두 할 수 있습니다. 자세한 내용은 [collect/README.md](collect/README.md)에 있습니다. 같은 입력이면 누가 수집해도 같은 파일이 나오므로, 다시 수집한 뒤 `git status`에 `traces/real/` 변경이 없으면 재현된 것입니다(맥 OrbStack에서 확인, Windows는 W12 재현 확인 항목).
+x86-64 대상 실행은 `collect/`의 Docker 이미지 안에서만 합니다(qemu-user gdbstub + gdb Python API). 수집한 트레이스는 커밋하므로, Docker가 없어도 분석과 테스트는 모두 할 수 있습니다. 자세한 내용은 [collect/README.md](collect/README.md)에 있습니다. 같은 입력이면 누가 수집해도 같은 파일이 나오므로, 다시 수집한 뒤 `git status`에 `traces/real/` 변경이 없으면 재현된 것입니다(정상 입력은 맥 OrbStack·Windows Docker Desktop, 위반 입력은 Windows에서 확인. 기록: `results/w12/repro.md`).
 
 ```bash
 docker build -t rc-collect collect/
