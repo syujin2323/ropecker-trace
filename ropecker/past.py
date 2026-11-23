@@ -16,4 +16,12 @@ def past_chain(lbr: list[Branch], db, align_check: bool = False) -> tuple[list[i
 
     align_check가 켜져 있고 비정렬 gadget을 만나면 즉시 (지금까지 주소, True)를 돌려준다.
     """
-    raise NotImplementedError("past.past_chain: past 레인(W12)")
+    rev: list[int] = []  # 최신 → 오래된 순으로 모은 뒤 뒤집는다
+    for br in reversed(lbr):
+        g = db.at(br.dst)
+        if g is None:
+            break  # 처음으로 gadget이 아닌 목적지에서 멈춘다(V-C)
+        rev.append(g.addr)
+        if align_check and not g.aligned:
+            return rev[::-1], True
+    return rev[::-1], False

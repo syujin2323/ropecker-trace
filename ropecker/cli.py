@@ -92,6 +92,7 @@ def unchecked_result(tr: Trace, params: Params) -> dict:
         "trace_end": _end_str(tr.end),
         "collector": tr.header.get("collector"),
         "params": params.as_json(),
+        "stubs": [],
     }
 
 
@@ -126,6 +127,10 @@ def _print_summary(result: dict, verbose: bool = False) -> None:
         for g in result.get("gadgets", []):
             where = f"{g['module']}+{g['off']}" if g.get("module") else "?"
             print(f"  gadget {g['addr']} ({where}, {g.get('from', '?')})")
+        if result.get("stubs"):
+            print(
+                f"임시 구현(stub) 사용: {', '.join(result['stubs'])} (해당 레인 구현 전, README '진행 현황')"
+            )
         if verbose:
             _print_checks(result)
     print(f"실행 스텝 {result['steps']}, 트레이스 종료 {result['trace_end']}")

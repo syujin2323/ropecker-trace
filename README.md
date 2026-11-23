@@ -67,9 +67,9 @@ uv run python scripts/run_cases.py
 | `target/` 빌드·sysroot | infra | ✅ M0 | — |
 | `collect/` 수집 이미지·`gdb_trace.py` | collect | ✅ 정상·위반 입력 실제 트레이스(재수집 시 같은 파일) | W12 (11/23) |
 | `gadgetdb.py` gadget DB (`python -m ropecker.gadgetdb` → `data/gadgets/` 3개) | db | ✅ scan·build·save·GadgetDB · ⬜ ROPgadget 교차검증 함수 | W12 (W13) |
-| `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ⬜ | W12 |
+| `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ✅ | W12 |
 | `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ⬜ | W12 |
-| `detector.py` 통합 판정 | past·infra | ⬜ | W12 |
+| `detector.py` 통합 판정 | past·infra | ✅ (window·future 미구현이면 임시 구현으로 연결, 결과 `stubs`에 표시) | W12 |
 | `scripts/run_cases.py` 보호 적용 전·후 비교표, CLI 판정 로그(`--verbose`) | infra | ✅ 적용 전 실행·비교표 · ⏳ 적용 후 열(레인 구현 뒤 다시 실행) | W12 (11/23) |
 | `experiments/sweep_t.py` T=5~17 실험 | any | ⬜ | W14 |
 
