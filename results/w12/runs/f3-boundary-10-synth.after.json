@@ -1,0 +1,192 @@
+{
+  "fmt": "ropecker-result",
+  "v": 1,
+  "verdict": "정상",
+  "chain_len": 10,
+  "past_len": 1,
+  "future_len": 9,
+  "gadgets": [
+    {
+      "addr": "0x7ffff7da9659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "past"
+    },
+    {
+      "addr": "0x7ffff7daa179",
+      "module": "libc.so.6",
+      "off": "0x2a179",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dab252",
+      "module": "libc.so.6",
+      "off": "0x2b252",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dac072",
+      "module": "libc.so.6",
+      "off": "0x2c072",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dad045",
+      "module": "libc.so.6",
+      "off": "0x2d045",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dae0c0",
+      "module": "libc.so.6",
+      "off": "0x2e0c0",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7daf3d1",
+      "module": "libc.so.6",
+      "off": "0x2f3d1",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7db0264",
+      "module": "libc.so.6",
+      "off": "0x30264",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dbdca6",
+      "module": "libc.so.6",
+      "off": "0x3dca6",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dc5e40",
+      "module": "libc.so.6",
+      "off": "0x45e40",
+      "from": "future"
+    }
+  ],
+  "checkpoint": {
+    "step": 3,
+    "pc": "0x7ffff7da9659",
+    "reason": "window"
+  },
+  "checks": [
+    {
+      "step": 0,
+      "pc": "0x4012a5",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3,
+      "pc": "0x7ffff7da9659",
+      "reason": "window",
+      "past": 1,
+      "future": 9,
+      "total": 10
+    },
+    {
+      "step": 4,
+      "pc": "0x7ffff7daa179",
+      "reason": "window",
+      "past": 2,
+      "future": 8,
+      "total": 10
+    },
+    {
+      "step": 5,
+      "pc": "0x7ffff7dab252",
+      "reason": "window",
+      "past": 3,
+      "future": 7,
+      "total": 10
+    },
+    {
+      "step": 6,
+      "pc": "0x7ffff7dac072",
+      "reason": "window",
+      "past": 4,
+      "future": 6,
+      "total": 10
+    },
+    {
+      "step": 7,
+      "pc": "0x7ffff7dad045",
+      "reason": "window",
+      "past": 5,
+      "future": 5,
+      "total": 10
+    },
+    {
+      "step": 8,
+      "pc": "0x7ffff7dae0c0",
+      "reason": "window",
+      "past": 6,
+      "future": 4,
+      "total": 10
+    },
+    {
+      "step": 9,
+      "pc": "0x7ffff7daf3d1",
+      "reason": "window",
+      "past": 7,
+      "future": 3,
+      "total": 10
+    },
+    {
+      "step": 10,
+      "pc": "0x7ffff7db0264",
+      "reason": "window",
+      "past": 8,
+      "future": 2,
+      "total": 10
+    },
+    {
+      "step": 12,
+      "pc": "0x7ffff7dbdca6",
+      "reason": "window",
+      "past": 9,
+      "future": 1,
+      "total": 10
+    },
+    {
+      "step": 14,
+      "pc": "0x7ffff7dc5e40",
+      "reason": "window",
+      "past": 10,
+      "future": 0,
+      "total": 10
+    },
+    {
+      "step": 16,
+      "pc": "0x7ffff7dc2720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    }
+  ],
+  "n_checkpoints": 12,
+  "steps": 17,
+  "trace_end": "max_steps",
+  "collector": "synth",
+  "params": {
+    "window": 8192,
+    "threshold": 11,
+    "cmp": "ge",
+    "lbr_depth": 16,
+    "align_check": false,
+    "check": true,
+    "risky_syscalls": [
+      9,
+      10,
+      25,
+      59
+    ]
+  },
+  "stubs": []
+}
