@@ -121,7 +121,7 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
 | check id | 기준 트레이스(합성) | 실제 수집 트레이스 |
 |---|---|---|
 | f1-normal | traces/synth/f1-normal.jsonl.gz | traces/real/f1-normal.jsonl.gz (W12 수집, 9,368스텝) |
-| f2-violation | traces/synth/f2-violation.jsonl.gz | traces/real/f2-violation.jsonl.gz (W12 시도) |
+| f2-violation | traces/synth/f2-violation.jsonl.gz | traces/real/f2-violation.jsonl.gz (W12 수집, 8,443스텝) |
 | f3-boundary-11 | traces/synth/f3-boundary-11.jsonl.gz | — |
 | f3-boundary-10 | traces/synth/f3-boundary-10.jsonl.gz | — |
 
