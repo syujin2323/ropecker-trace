@@ -68,12 +68,12 @@ uv run python scripts/run_cases.py
 | `collect/` 수집 이미지·`gdb_trace.py` | collect | ✅ 정상·위반 입력 실제 트레이스(재수집 시 같은 파일) | W12 (11/23) |
 | `gadgetdb.py` gadget DB (`python -m ropecker.gadgetdb` → `data/gadgets/` 3개) | db | ✅ scan·build·save·GadgetDB · ⬜ ROPgadget 교차검증 함수 | W12 (W13) |
 | `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ✅ | W12 |
-| `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ⬜ | W12 |
-| `detector.py` 통합 판정 | past·infra | ✅ (window·future 미구현이면 임시 구현으로 연결, 결과 `stubs`에 표시) | W12 |
+| `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ✅ LRU 윈도·위험 syscall 체크포인트·ret 미래 연쇄 · ⬜ jmp gadget 에뮬레이션 | W12 (W13) |
+| `detector.py` 통합 판정 | past·infra | ✅ (모든 레인 연결, 결과 `stubs` 빈 목록) | W12 |
 | `scripts/run_cases.py` 보호 적용 전·후 비교표, CLI 판정 로그(`--verbose`) | infra | ✅ 적용 전 실행·비교표 · ⏳ 적용 후 열(레인 구현 뒤 다시 실행) | W12 (11/23) |
 | `experiments/sweep_t.py` T=5~17 실험 | any | ⬜ | W14 |
 
-레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 지금은 xfail이고, 구현이 들어오면 저절로 pass/fail로 바뀝니다.
+레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 미구현이면 xfail로 표시되고, 구현이 들어오면 저절로 pass/fail로 바뀝니다. W12 기준 모든 레인이 구현되어 xfail은 없습니다(`uv run pytest`: 63 passed, 2 skipped — 실제 수집하지 않은 경계 트레이스 2개).
 
 ## 저장소 구조
 
