@@ -33,3 +33,21 @@ README "빠른 시작"대로 새로 clone한 main(`3a58243`)에서 실행했다.
 - 결론: Windows에서도 clone → 설치 → 테스트 → README 명령이 macOS와 같은 결과를 냈다.
 - 참고(gadget DB PR #8 브랜치): 같은 PC에서 38 passed, 2 skipped, 16 xfailed이고, 보호 적용 후 실행은 `GadgetDB.open`을 지나 `미구현: detector.detect`(통합 레인)에서 멈춘다.
 - 콘솔에 한글이 깨지면 `$env:PYTHONUTF8 = "1"`을 먼저 실행한다(CI도 같은 설정).
+
+# W12 Windows 재실행 — 모든 레인 구현 후 (체크리스트 9번 · 김수영)
+
+future 레인(PR #10)이 들어간 main(`0c26d62`)에서 실행했다.
+
+- 환경: Windows 10 Pro (빌드 19045), PowerShell, uv 0.13.9, Python 3.11.0(PC에 설치된 3.11을 uv가 사용)
+- 명령과 결과:
+
+| 단계 | 명령 | 결과 |
+|---|---|---|
+| 설치 | `uv sync --locked` | 성공(패키지 10개) |
+| 테스트 | `uv run pytest -q` | 63 passed, 2 skipped(실제 수집하지 않은 경계 트레이스 2개), xfail 0, 실패 0 |
+| 정적 검사 | `uv run ruff check .` | All checks passed |
+| 보호 적용 전 | `uv run python -m ropecker --trace traces/synth/f2-violation.jsonl.gz --window 8192 --threshold 11 --no-check` | 판정 미검사, 24스텝, 끝 `syscall:59`, 종료 코드 0 |
+| 보호 적용 후 | 같은 명령에서 `--no-check` 뺌 | ROP, 연쇄 17(과거 1 + 미래 16), 스텝 3에서 탐지, 종료 코드 1, `stubs` 빈 목록 |
+| 비교표 | `uv run python scripts/run_cases.py` | 적용 후 판정 일치 6 · 불일치 0 · 미구현 0 · 오류 0 |
+
+- 결론: Windows 10에서도 모든 레인이 연결된 상태로 동결 사례 6건이 기대와 일치했다. 앞의 Windows 재실행(김종훈)과 달리 미구현 레인이 없다.
