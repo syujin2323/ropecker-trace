@@ -1,3 +1,25 @@
 $ python -m ropecker --trace traces/synth/f2-violation.jsonl.gz --window 8192 --threshold 11 --cmp ge --verbose --json results/w12/runs/f2-violation-synth.after.json
-미구현: gadgetdb.GadgetDB.open: db 레인(W12) (README의 '진행 현황' 참고)
-[종료 코드 2]
+판정: ROP (연쇄 길이 17 = 과거 1 + 미래 16, 기준 연쇄 ≥ 11)
+체크포인트: 스텝 3, pc 0x7ffff7da9659, 이유 window
+  gadget 0x7ffff7da9659 (libc.so.6+0x29659, past)
+  gadget 0x7ffff7daa179 (libc.so.6+0x2a179, future)
+  gadget 0x7ffff7dab252 (libc.so.6+0x2b252, future)
+  gadget 0x7ffff7dac072 (libc.so.6+0x2c072, future)
+  gadget 0x7ffff7dad045 (libc.so.6+0x2d045, future)
+  gadget 0x7ffff7dae0c0 (libc.so.6+0x2e0c0, future)
+  gadget 0x7ffff7daf3d1 (libc.so.6+0x2f3d1, future)
+  gadget 0x7ffff7db0157 (libc.so.6+0x30157, future)
+  gadget 0x7ffff7db12ed (libc.so.6+0x312ed, future)
+  gadget 0x7ffff7db20c1 (libc.so.6+0x320c1, future)
+  gadget 0x7ffff7db3059 (libc.so.6+0x33059, future)
+  gadget 0x7ffff7db43e8 (libc.so.6+0x343e8, future)
+  gadget 0x7ffff7db5001 (libc.so.6+0x35001, future)
+  gadget 0x7ffff7db60e0 (libc.so.6+0x360e0, future)
+  gadget 0x7ffff7db7a19 (libc.so.6+0x37a19, future)
+  gadget 0x7ffff7dbdca6 (libc.so.6+0x3dca6, future)
+  gadget 0x7ffff7dc5e40 (libc.so.6+0x45e40, future)
+판정 로그 (체크포인트 2개)
+  스텝       0  pc 0x4012a5  window      과거 0 + 미래 0 = 0  -
+  스텝       3  pc 0x7ffff7da9659  window      과거 1 + 미래 16 = 17  ROP
+실행 스텝 24, 트레이스 종료 syscall:59
+[종료 코드 1]

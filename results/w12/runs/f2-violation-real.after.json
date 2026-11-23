@@ -1,0 +1,2088 @@
+{
+  "fmt": "ropecker-result",
+  "v": 1,
+  "verdict": "ROP",
+  "chain_len": 18,
+  "past_len": 2,
+  "future_len": 16,
+  "gadgets": [
+    {
+      "addr": "0x4012a5",
+      "module": "rop_vault",
+      "off": "0x4012a5",
+      "from": "past"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "past"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086c659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086d3e5",
+      "module": "libc.so.6",
+      "off": "0x2a3e5",
+      "from": "future"
+    },
+    {
+      "addr": "0x400086ee51",
+      "module": "libc.so.6",
+      "off": "0x2be51",
+      "from": "future"
+    },
+    {
+      "addr": "0x4000888e40",
+      "module": "libc.so.6",
+      "off": "0x45e40",
+      "from": "future"
+    }
+  ],
+  "checkpoint": {
+    "step": 8422,
+    "pc": "0x400086c659",
+    "reason": "window"
+  },
+  "checks": [
+    {
+      "step": 0,
+      "pc": "0x4012a8",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 19,
+      "pc": "0x4000816c80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 45,
+      "pc": "0x4000813e90",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 108,
+      "pc": "0x400080d0f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 230,
+      "pc": "0x400080c410",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 421,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 477,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 487,
+      "pc": "0x400080c2c7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 507,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 566,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 578,
+      "pc": "0x400080c39c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 594,
+      "pc": "0x400080d001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 667,
+      "pc": "0x4000813f91",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 690,
+      "pc": "0x4000814001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 700,
+      "pc": "0x4000816d0e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 715,
+      "pc": "0x40008c4540",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 762,
+      "pc": "0x40008cd4f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 766,
+      "pc": "0x40008d12d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 843,
+      "pc": "0x40008c4635",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 864,
+      "pc": "0x4012d9",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 919,
+      "pc": "0x40008cd4f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 923,
+      "pc": "0x40008d12d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1000,
+      "pc": "0x40008c4635",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1021,
+      "pc": "0x4012f7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1037,
+      "pc": "0x4000816c80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1063,
+      "pc": "0x4000813e90",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1126,
+      "pc": "0x400080d0f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1240,
+      "pc": "0x400080c410",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1447,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1469,
+      "pc": "0x4000829280",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1490,
+      "pc": "0x400080c2c7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1510,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1569,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1581,
+      "pc": "0x400080c39c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1597,
+      "pc": "0x400080d001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1671,
+      "pc": "0x4000813f91",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1691,
+      "pc": "0x40008140f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1692,
+      "pc": "0x40008eb200",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1711,
+      "pc": "0x4000813fe0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1724,
+      "pc": "0x4000816d0e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1739,
+      "pc": "0x40009db9c0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1764,
+      "pc": "0x40131a",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1783,
+      "pc": "0x4000816c80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1809,
+      "pc": "0x4000813e90",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1872,
+      "pc": "0x400080d0f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 1970,
+      "pc": "0x400080c410",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2185,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2205,
+      "pc": "0x4000829660",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2210,
+      "pc": "0x400080c2c7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2230,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2289,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2301,
+      "pc": "0x400080c39c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2317,
+      "pc": "0x400080d001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2390,
+      "pc": "0x4000813f91",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2413,
+      "pc": "0x4000814001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2423,
+      "pc": "0x4000816d0e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2438,
+      "pc": "0x40008c3da0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2447,
+      "pc": "0x400086b490",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2449,
+      "pc": "0x40009e0860",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2471,
+      "pc": "0x40008c3db8",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2503,
+      "pc": "0x40008ce550",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2537,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2611,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2630,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2656,
+      "pc": "0x40008ce720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2691,
+      "pc": "0x40008c3e6c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2699,
+      "pc": "0x40008d0720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2717,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2779,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2798,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2824,
+      "pc": "0x40008cf901",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2861,
+      "pc": "0x40008c3efa",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2886,
+      "pc": "0x4011fa",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2900,
+      "pc": "0x400086b490",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2902,
+      "pc": "0x40009e0860",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2924,
+      "pc": "0x40008c3db8",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2957,
+      "pc": "0x40008ce550",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 2991,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3044,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3063,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3089,
+      "pc": "0x40008ce720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3124,
+      "pc": "0x40008c3e6c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3132,
+      "pc": "0x40008d0720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3150,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3212,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3231,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3257,
+      "pc": "0x40008cf901",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3294,
+      "pc": "0x40008c3efa",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3319,
+      "pc": "0x401209",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3333,
+      "pc": "0x400086b490",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3335,
+      "pc": "0x40009e0860",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3357,
+      "pc": "0x40008c3db8",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3390,
+      "pc": "0x40008ce550",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3424,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3477,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3496,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3522,
+      "pc": "0x40008ce720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3557,
+      "pc": "0x40008c3e6c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3565,
+      "pc": "0x40008d0720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3583,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3645,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3664,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3690,
+      "pc": "0x40008cf901",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3727,
+      "pc": "0x40008c3efa",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3752,
+      "pc": "0x401218",
+      "reason": "window",
+      "past": 1,
+      "future": 0,
+      "total": 1
+    },
+    {
+      "step": 3778,
+      "pc": "0x4000816c80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3804,
+      "pc": "0x4000813e90",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3867,
+      "pc": "0x400080d0f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3981,
+      "pc": "0x400080c410",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4172,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4192,
+      "pc": "0x4000829660",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4197,
+      "pc": "0x400080c2c7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4217,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4276,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4288,
+      "pc": "0x400080c39c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4304,
+      "pc": "0x400080d001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4378,
+      "pc": "0x4000813f91",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4401,
+      "pc": "0x4000814001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4411,
+      "pc": "0x4000816d0e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4426,
+      "pc": "0x40008a3680",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4451,
+      "pc": "0x40008b7f80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4471,
+      "pc": "0x40008b8450",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4480,
+      "pc": "0x40008b9570",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4495,
+      "pc": "0x40008ba4f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4531,
+      "pc": "0x40008b7f80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4551,
+      "pc": "0x40008b8450",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4569,
+      "pc": "0x400086b4d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4571,
+      "pc": "0x40009e0480",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4590,
+      "pc": "0x40008b8032",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4611,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4642,
+      "pc": "0x400086b3e0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4644,
+      "pc": "0x40009e3800",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4657,
+      "pc": "0x40008d0d8c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4673,
+      "pc": "0x40008b809d",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4779,
+      "pc": "0x400089d1c0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4897,
+      "pc": "0x40008b9510",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4930,
+      "pc": "0x40008ba491",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4932,
+      "pc": "0x40008b8b52",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 4972,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5064,
+      "pc": "0x400086b4d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5066,
+      "pc": "0x40009e0480",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5085,
+      "pc": "0x40008b8ee6",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5098,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5195,
+      "pc": "0x40008ba5b5",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5201,
+      "pc": "0x40008d40e0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5241,
+      "pc": "0x40008ce550",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5275,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5328,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5347,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5373,
+      "pc": "0x40008ce720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5408,
+      "pc": "0x40008ba622",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5424,
+      "pc": "0x40008d4120",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5443,
+      "pc": "0x40008a372f",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5448,
+      "pc": "0x40124e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5481,
+      "pc": "0x40008b7f80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5501,
+      "pc": "0x40008b8450",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5510,
+      "pc": "0x40008b9570",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5525,
+      "pc": "0x40008ba4f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5561,
+      "pc": "0x40008b7f80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5581,
+      "pc": "0x40008b8450",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5599,
+      "pc": "0x400086b4d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5601,
+      "pc": "0x40009e0480",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5620,
+      "pc": "0x40008b8032",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5641,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5672,
+      "pc": "0x400086b3e0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5674,
+      "pc": "0x40009e3800",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5687,
+      "pc": "0x40008d0d8c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5703,
+      "pc": "0x40008b809d",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5809,
+      "pc": "0x400089d1c0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5891,
+      "pc": "0x40008b9510",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5924,
+      "pc": "0x40008ba491",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5926,
+      "pc": "0x40008b8b52",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 5966,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6074,
+      "pc": "0x400086b4d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6076,
+      "pc": "0x40009e0480",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6095,
+      "pc": "0x40008b8ee6",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6108,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6205,
+      "pc": "0x40008ba5b5",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6211,
+      "pc": "0x40008d40e0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6251,
+      "pc": "0x40008ce550",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6285,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6338,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6357,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6383,
+      "pc": "0x40008ce720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6418,
+      "pc": "0x40008ba622",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6434,
+      "pc": "0x40008d4120",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6453,
+      "pc": "0x40008a372f",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6458,
+      "pc": "0x40126c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6489,
+      "pc": "0x40008b7f80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6509,
+      "pc": "0x40008b8450",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6518,
+      "pc": "0x40008b9570",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6533,
+      "pc": "0x40008ba4f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6569,
+      "pc": "0x40008b7f80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6589,
+      "pc": "0x40008b8450",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6607,
+      "pc": "0x400086b4d0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6609,
+      "pc": "0x40009e0480",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6628,
+      "pc": "0x40008b8032",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6649,
+      "pc": "0x40008d0ce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6751,
+      "pc": "0x40008ba5b5",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6757,
+      "pc": "0x40008d40e0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6797,
+      "pc": "0x40008ce550",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6831,
+      "pc": "0x40008cfce0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6884,
+      "pc": "0x40008cde10",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6903,
+      "pc": "0x4000957940",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6929,
+      "pc": "0x40008ce720",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6964,
+      "pc": "0x40008ba622",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6980,
+      "pc": "0x40008d4120",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 6999,
+      "pc": "0x40008a372f",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7004,
+      "pc": "0x401280",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7014,
+      "pc": "0x4000816c80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7040,
+      "pc": "0x4000813e90",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7103,
+      "pc": "0x400080d0f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7217,
+      "pc": "0x400080c410",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7416,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7436,
+      "pc": "0x4000829660",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7441,
+      "pc": "0x400080c2c7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7461,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7520,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7532,
+      "pc": "0x400080c39c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7548,
+      "pc": "0x400080d001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7621,
+      "pc": "0x4000813f91",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7644,
+      "pc": "0x4000814001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7654,
+      "pc": "0x4000816d0e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7669,
+      "pc": "0x40008c2080",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7699,
+      "pc": "0x40008cd380",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7735,
+      "pc": "0x40128f",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7747,
+      "pc": "0x4000816c80",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7773,
+      "pc": "0x4000813e90",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7836,
+      "pc": "0x400080d0f0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 7934,
+      "pc": "0x400080c410",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8133,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8160,
+      "pc": "0x4000829280",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8183,
+      "pc": "0x400080c2c7",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8203,
+      "pc": "0x4000828240",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8262,
+      "pc": "0x4000829640",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8274,
+      "pc": "0x400080c39c",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8290,
+      "pc": "0x400080d001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8364,
+      "pc": "0x4000813f91",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8387,
+      "pc": "0x4000814001",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8397,
+      "pc": "0x4000816d0e",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8412,
+      "pc": "0x40009578a0",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 8419,
+      "pc": "0x4012a5",
+      "reason": "window",
+      "past": 1,
+      "future": 0,
+      "total": 1
+    },
+    {
+      "step": 8422,
+      "pc": "0x400086c659",
+      "reason": "window",
+      "past": 2,
+      "future": 16,
+      "total": 18
+    }
+  ],
+  "n_checkpoints": 243,
+  "steps": 8443,
+  "trace_end": "syscall:59",
+  "collector": "gdb-qemu",
+  "params": {
+    "window": 8192,
+    "threshold": 11,
+    "cmp": "ge",
+    "lbr_depth": 16,
+    "align_check": false,
+    "check": true,
+    "risky_syscalls": [
+      9,
+      10,
+      25,
+      59
+    ]
+  },
+  "stubs": []
+}

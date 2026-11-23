@@ -1,3 +1,8 @@
 $ python -m ropecker --trace traces/synth/f1-normal.jsonl.gz --window 8192 --threshold 11 --cmp ge --verbose --json results/w12/runs/f1-normal-synth.after.json
-미구현: gadgetdb.GadgetDB.open: db 레인(W12) (README의 '진행 현황' 참고)
-[종료 코드 2]
+판정: 정상 (연쇄 길이 0 = 과거 0 + 미래 0, 기준 연쇄 ≥ 11)
+체크포인트: 스텝 0, pc 0x4012a5, 이유 window
+판정 로그 (체크포인트 2개)
+  스텝       0  pc 0x4012a5  window      과거 0 + 미래 0 = 0  -
+  스텝       6  pc 0x7ffff7da9d90  window      과거 0 + 미래 0 = 0  -
+실행 스텝 8, 트레이스 종료 exit:0
+[종료 코드 0]
