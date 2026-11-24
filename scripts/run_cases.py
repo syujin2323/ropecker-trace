@@ -14,10 +14,12 @@
 --cases를 주면 13주차 추가 사례(cases/extra/*.json, 형식은 cases/extra/README.md)를 같은 방식으로 돌린다.
 트레이스 check는 전·후 두 번, 단위 check(pytest)는 한 번 실행하고, 기대와 다른 결과를 반례 목록(C1…)으로 모은다.
 
-    uv run python scripts/run_cases.py --cases cases/extra            # 결과: results/w13/
-    uv run python scripts/run_cases.py --cases cases/extra --only E2 --out results/w13/e2-before-fix
+    uv run python scripts/run_cases.py --cases cases/extra                 # 전체 → results/w13/ (커밋)
+    uv run python scripts/run_cases.py --cases cases/extra --only E2       # 일부 → results/w13-only.tmp/ (커밋 안 함)
+    uv run python scripts/run_cases.py --cases cases/extra --only E2 --out results/w13/E2-before-fix
 
-추가 사례에서 기대와 다른 결과는 찾아낸 반례이지 실행 실패가 아니다. 종료 코드는 오류가 있을 때만 1이다.
+추가 사례에서 기대와 다른 결과는 찾아낸 반례이지 실행 실패가 아니다.
+종료 코드(--cases): 0 = 오류 없음(반례 포함), 1 = ⚠️ 오류가 있음, 2 = 사례 파일 형식 오류·없는 사례 번호.
 """
 
 from __future__ import annotations
@@ -29,6 +31,8 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -39,6 +43,7 @@ from ropecker.cases import TRACE_KINDS, describe_expect, iter_checks, judge, loa
 
 DEFAULT_OUT = Path("results") / "w12"
 EXTRA_OUT = Path("results") / "w13"
+ONLY_OUT = Path("results") / "w13-only.tmp"  # --only(일부 실행)의 기본 결과 폴더, .gitignore의 results/*.tmp/
 KIND_NAMES = {"synth": "합성", "real": "실제 수집"}
 EXECVE_END = "syscall:59"  # 위반 트레이스의 피해: execve 도달 = 셸 실행
 
@@ -145,42 +150,68 @@ def _cond(params: dict, base: dict, args: list[str]) -> str:
     return ", ".join(out)
 
 
+def junit_counts(xml_text: str) -> dict:
+    """pytest --junitxml 결과에서 tests·failures·errors·skipped 수를 센다."""
+    root = ET.fromstring(xml_text)
+    suites = [root] if root.tag == "testsuite" else root.findall("testsuite")
+    return {k: sum(int(s.get(k, 0)) for s in suites) for k in ("tests", "failures", "errors", "skipped")}
+
+
+def unit_status(counts: dict | None, want_pass: bool) -> tuple[str, str, list[str]]:
+    """(실행 결과 글, 표시, 기대와 다른 점). skip·준비 오류·테스트 없음은 판정하지 않고 ⚠️로 둔다."""
+    if counts is None:
+        return "오류 (로그 참고)", "⚠️ 오류", []
+    if counts["tests"] == 0:
+        return "테스트 없음", "⚠️ 오류", ["테스트를 찾지 못함"]
+    if counts["errors"]:
+        return f"준비 오류 {counts['errors']}개", "⚠️ 오류", ["테스트 준비 중 오류(로그 참고)"]
+    if counts["skipped"]:
+        return f"skip {counts['skipped']}개", "⚠️ 오류", ["skip된 테스트는 판정하지 않음"]
+    got = "통과" if counts["failures"] == 0 else "실패"
+    want = "통과" if want_pass else "실패"
+    problems = [] if got == want else [f"테스트 {got} (기대 {want})"]
+    return f"테스트 {got}", ("❌ 기대와 다름" if problems else "✅ 기대와 같음"), problems
+
+
 def run_pytest(node: str, runs: Path, name: str) -> dict:
-    """추가 사례의 단위 check: pytest 노드 하나를 별도 프로세스로 돌리고 로그를 남긴다."""
+    """추가 사례의 단위 check: pytest 노드 하나를 별도 프로세스로 돌리고 로그를 남긴다.
+
+    xfail 표시는 무시하고(--runxfail) 실제 통과·실패로 센다. junit 파일은 임시 폴더에 두어 결과 폴더가
+    실행할 때마다 바뀌지 않게 한다.
+    """
     log_path = runs / f"{name}.pytest.log"
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", node, "-q", "-p", "no:cacheprovider"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        env={**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
-        check=False,
-    )
+    with tempfile.TemporaryDirectory() as tmp:
+        xml_path = Path(tmp) / "junit.xml"
+        proc = subprocess.run(
+            [sys.executable, "-m", "pytest", node, "-q", "-rA", "--runxfail", "-p", "no:cacheprovider",
+             f"--junitxml={xml_path}"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env={**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
+            check=False,
+        )
+        counts = junit_counts(xml_path.read_text(encoding="utf-8")) if xml_path.exists() else None
     log_path.write_text(
-        f"$ python -m pytest {node} -q\n{proc.stdout}{proc.stderr}[종료 코드 {proc.returncode}]\n",
+        f"$ python -m pytest {node} -q -rA --runxfail\n{proc.stdout}{proc.stderr}[종료 코드 {proc.returncode}]\n",
         encoding="utf-8",
         newline="\n",
     )
-    return {"code": proc.returncode, "log": log_path}
+    return {"code": proc.returncode, "log": log_path, "counts": counts}
 
 
-def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path) -> dict:
+def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path, synth_hint: str) -> dict:
     """추가 사례 check 하나를 실행해 표 한 행에 쓸 값을 돌려준다."""
-    from ropecker.extra import params_for, trace_of
+    from ropecker.extra import params_for, trace_header, trace_of
 
     name, exp = chk["id"], chk["expect"]
     if "pytest" in chk:
         run = run_pytest(chk["pytest"], runs, name)
-        want = "통과" if exp["pass"] else "실패"
-        row = {"cond": f"단위 테스트 `{chk['pytest']}`", "before": "—", "expect": f"테스트 {want}"}
-        row["evidence"] = [f"[로그]({_rel(run['log'], out)})"]
-        if run["code"] not in (0, 1):
-            return {**row, "after": "오류 (로그 참고)", "mark": "⚠️ 오류", "problems": []}
-        got = "통과" if run["code"] == 0 else "실패"
-        problems = [] if got == want else [f"테스트 {got} (기대 {want})"]
-        return {**row, "after": f"테스트 {got}", "mark": "❌ 기대와 다름" if problems else "✅ 기대와 같음", "problems": problems}
+        after, mark, problems = unit_status(run["counts"], exp["pass"])
+        row = {"cond": f"단위 테스트 `{chk['pytest']}`", "before": "—", "expect": f"테스트 {'통과' if exp['pass'] else '실패'}"}
+        return {**row, "after": after, "mark": mark, "problems": problems, "evidence": [f"[로그]({_rel(run['log'], out)})"]}
 
     trace = trace_of(chk)
     params = params_for(base, case, chk)
@@ -189,9 +220,13 @@ def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path) -> di
     if extra := _cond(params, base, args):
         cond += f" ({extra})"
     row = {"cond": cond, "expect": describe_expect(exp)}
+    gen = f"`python -m ropecker.synth --extra{synth_hint} --only {case['id']}`"
     if not (ROOT / trace).exists():
-        hint = f"`python -m ropecker.synth --extra --only {case['id']}`" if "synth" in chk else "수집 전"
+        hint = gen if "synth" in chk else "수집 전"
         return {**row, "before": "—", "after": "—", "mark": f"⏳ 트레이스 없음({hint})", "problems": [], "evidence": []}
+    if "synth" in chk and trace_header(ROOT / trace).get("spec") != chk["synth"]:
+        stale = f"⚠️ 스펙과 다른 옛 트레이스(스펙을 되돌리거나 {gen[:-1]} --force`로 다시 만드세요)"
+        return {**row, "before": "—", "after": "—", "mark": stale, "problems": [], "evidence": []}
     before = run_cli(trace, params, "before", runs, name, args)
     after = run_cli(trace, params, "after", runs, name, args)
     row["before"] = describe_before(before)
@@ -207,7 +242,7 @@ def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path) -> di
     return {**row, "mark": "❌ 기대와 다름" if problems else "✅ 기대와 같음", "problems": problems}
 
 
-def run_extra(cases_path: str, out: Path, only: set[str] | None) -> int:
+def run_extra(cases_path: Path, out: Path, only: set[str] | None) -> int:
     """13주차 추가 사례를 실행해 out/compare.md(사례 표 + 반례 목록)를 만든다."""
     from ropecker.extra import analysis_for, load_cases
 
@@ -228,9 +263,11 @@ def run_extra(cases_path: str, out: Path, only: set[str] | None) -> int:
 
     rows, cex = [], []
     counts = {"✅": 0, "❌": 0, "⏳": 0, "⚠️": 0}
+    rel_cases = _rel(Path(cases_path).resolve())
+    synth_hint = "" if rel_cases == "cases/extra" else f" --cases {rel_cases}"
     for case in cases:
         for chk in case["checks"]:
-            r = _extra_check(case, chk, base, runs, out)
+            r = _extra_check(case, chk, base, runs, out, synth_hint)
             counts[r["mark"].split()[0]] += 1
             result = r["mark"] + (": " + "; ".join(r["problems"]) if r["problems"] else "")
             rows.append(
@@ -247,7 +284,6 @@ def run_extra(cases_path: str, out: Path, only: set[str] | None) -> int:
 
     op = "≥" if base["cmp"] == "ge" else ">"
     now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %z")
-    rel_cases = _rel(ROOT / cases_path) if not Path(cases_path).is_absolute() else Path(cases_path).as_posix()
     head = [
         "# 추가 검증 사례 실행 결과 (13주차)",
         "",
@@ -291,6 +327,16 @@ def run_extra(cases_path: str, out: Path, only: set[str] | None) -> int:
     return 1 if counts["⚠️"] else 0
 
 
+def extra_out(out: Path | None, only: set[str] | None) -> Path:
+    """--cases의 결과 폴더: --out이 있으면 그것, --only(일부 실행)면 커밋하지 않는 폴더, 아니면 results/w13.
+
+    일부 실행이 공용 results/w13/compare.md를 덮어 팀원끼리 충돌하지 않게 한다.
+    """
+    if out is not None:
+        return out
+    return ROOT / (ONLY_OUT if only else EXTRA_OUT)
+
+
 def main(argv: list[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):  # Windows 콘솔에서도 한글이 깨지지 않게
         try:
@@ -298,13 +344,16 @@ def main(argv: list[str] | None = None) -> int:
         except (AttributeError, ValueError, OSError):
             pass
     ap = argparse.ArgumentParser(description="동결 사례(기본) 또는 13주차 추가 사례를 보호 적용 전·후로 실행해 비교표를 만든다.")
-    ap.add_argument("--out", type=Path, help="결과 폴더 (기본 results/w12, --cases면 results/w13)")
-    ap.add_argument("--cases", help="13주차 추가 사례 파일·폴더 (예: cases/extra). 없으면 동결 사례를 실행")
+    ap.add_argument("--out", type=Path, help="결과 폴더 (기본 results/w12, --cases면 results/w13, --only면 results/w13-only.tmp)")
+    ap.add_argument("--cases", help="13주차 추가 사례 파일·폴더, 현재 폴더 기준 (예: cases/extra). 없으면 동결 사례를 실행")
     ap.add_argument("--only", help="--cases에서 실행할 사례 번호, 쉼표로 구분 (예: E2,E7)")
     args = ap.parse_args(argv)
     if args.cases:
         only = {s.strip() for s in args.only.split(",") if s.strip()} if args.only else None
-        return run_extra(args.cases, args.out or ROOT / EXTRA_OUT, only)
+        out = extra_out(args.out, only)
+        if only and not args.out:
+            print(f"일부만 실행(--only) → {_rel(out)}/ (커밋하지 않음). results/w13/은 --only 없이 전체를 실행해 갱신합니다.")
+        return run_extra(Path(args.cases).resolve(), out, only)
     if args.only:
         ap.error("--only는 --cases와 함께 씁니다")
     return run_frozen(args.out or ROOT / DEFAULT_OUT)
