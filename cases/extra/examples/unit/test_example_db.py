@@ -5,13 +5,9 @@
 기본 `uv run pytest`(tests/만 수집)에는 들어가지 않고 `scripts/run_cases.py --cases`가 실행한다.
 """
 
-from pathlib import Path
-
 from ropecker.gadgetdb import GadgetDB
 from ropecker.image import Image, module_entry
-from ropecker.synth import LIBC, LIBC_BASE, ROP_VAULT
-
-ROOT = Path(__file__).resolve().parents[4]
+from ropecker.synth import LIBC, LIBC_BASE, ROOT, ROP_VAULT  # ROOT = 저장소 루트(파일을 어디로 옮겨도 같음)
 
 
 def test_pop_rdi_ret_is_gadget():

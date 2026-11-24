@@ -7,15 +7,17 @@
 import json
 from pathlib import Path
 
+import capstone
 import pytest
 
+from ropecker import synth
 from ropecker import trace as trace_io
 from ropecker.detector import detect
-from ropecker.extra import EXTRA_DIR, load_cases, synth_problems, trace_of, validate_case
+from ropecker.extra import EXTRA_DIR, load_cases, synth_problems, trace_header, trace_of, validate_case
 from ropecker.gadgetdb import GadgetDB
 from ropecker.image import Image
 from ropecker.model import Params
-from ropecker.synth import FRAME, Builder
+from ropecker.synth import FRAME, Builder, _stack_effect
 from scripts import run_cases
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +73,23 @@ def test_valid_case_has_no_problems():
         ({"checks": [{"id": "Bad_ID", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP"}}]}, "check id"),
         ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP", "len": 3}}]}, "모르는 기대값 키"),
         ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "expect": {"verdict": "탐지"}}]}, "expect.verdict"),
-        ({"checks": [{"id": "t", "expect": {"verdict": "ROP"}}]}, "trace(수집한 트레이스 경로)나 synth"),
+        ({"checks": [{"id": "t", "expect": {"verdict": "ROP"}}]}, "정확히 하나"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "trace": "traces/x.jsonl.gz", "expect": {"verdict": "ROP"}}]},
+         "정확히 하나"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP", "detect_step_max": "3"}}]},
+         "detect_step_max는 0 이상의 정수"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP", "chain_len_min": -1}}]},
+         "chain_len_min는 0 이상의 정수"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP", "gadgets_nonempty": "yes"}}]},
+         "gadgets_nonempty는"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP", "trace_end": 0}}]}, "trace_end는"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "parmas": {}, "expect": {"verdict": "ROP"}}]}, "check에 모르는 키"),
+        ({"작성자": "송유진"}, "모르는 키"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "args": ["--threshold=12"], "expect": {"verdict": "ROP"}}]},
+         "args에"),
+        ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "args": ["--thr", "12"], "expect": {"verdict": "ROP"}}]}, "args에"),
+        ({"params": {"window": True}}, "window는 양의 정수"),
+        ({"결과 분석": {"분류": "구현 버그", "원인": "x"}}, "'결과 분석'에 모르는 키"),
         ({"checks": [{"id": "t", "trace": "/tmp/x.gz", "expect": {"verdict": "ROP"}}]}, "저장소 루트 기준"),
         ({"checks": [{"id": "t", "synth": {"chain": [RET]}, "args": ["--cmp", "gt"], "expect": {"verdict": "ROP"}}]},
          "args에"),
@@ -177,7 +195,7 @@ def test_committed_example_traces_match_spec(builder, case):
 
 # ---------------------------------------------------------------- 실행기
 def test_run_extra_on_examples(tmp_path):
-    code = run_cases.main(["--cases", EXAMPLES.as_posix(), "--out", str(tmp_path)])
+    code = run_cases.main(["--cases", (ROOT / EXAMPLES).as_posix(), "--out", str(tmp_path)])
     text = (tmp_path / "compare.md").read_text(encoding="utf-8")
     assert code == 0
     assert "결과: 기대와 같음 4 · 기대와 다름(반례) 0 · 실행 전 0 · 오류 0" in text
@@ -205,9 +223,155 @@ def test_run_extra_lists_counterexamples(tmp_path):
     assert code == 0
     assert "기대와 같음 0 · 기대와 다름(반례) 1 · 실행 전 1 · 오류 0" in text
     assert "| C1 | E1 `t-miss`: ret 체인 | ROP | 정상, 연쇄 10 — 판정 정상 (기대 ROP) | 원논문 한계 | 한계로 기록 | 논문 §IX-C |" in text
-    assert "⏳ 트레이스 없음(`python -m ropecker.synth --extra --only E1`)" in text
+    # 기본 폴더(cases/extra)가 아니므로 만드는 명령에 --cases가 붙는다(지적 12)
+    assert f"⏳ 트레이스 없음(`python -m ropecker.synth --extra --cases {cases.resolve().as_posix()} --only E1`)" in text
 
 
 def test_only_requires_cases():
     with pytest.raises(SystemExit):
         run_cases.main(["--only", "E1"])
+
+
+# ---------------------------------------------------------------- 리뷰 반영(합성 스택 모델·검사·실행기)
+def _ret_mismatches(tr):
+    """스냅샷이 있는 ret 스텝에서 스택 맨 위가 다음 pc와 다른 스텝 번호들(스냅샷이 실제 실행과 맞는지)."""
+    img = Image.from_header(tr.header, root=ROOT)
+    return [
+        i
+        for i, s in enumerate(tr.steps[:-1])
+        if s.stk is not None and img.insn(s.pc).text.startswith("ret") and s.stk[0] != tr.steps[i + 1].pc
+    ]
+
+
+def test_call_ind_return_address_must_be_discarded(builder):
+    """call*이 쌓은 복귀 주소를 꺼내 버리지 않고 바로 ret하는 스펙은 만들 수 없다(지적 1)."""
+    with pytest.raises(ValueError, match="복귀 주소"):
+        builder.spec_trace("t-call-bad", {"chain": [RET, {"pick": {"asm": "^call rax$"}}, RET, RET], "ending": "stop"})
+
+
+def test_call_ind_snapshots_follow_execution(builder):
+    """call* 뒤 pop으로 복귀 주소를 버리면 만들어지고, 스냅샷은 시점에 맞는 스택을 보인다."""
+    spec = {"chain": [RET, {"pick": {"asm": "^call rax$"}}, {"pick": {"asm": "^pop rbx; ret$"}}, RET, RET], "ending": "stop"}
+    tr = builder.spec_trace("t-call", spec)
+    assert _ret_mismatches(tr) == []
+    call = int(tr.header["entries"][1]["addr"], 16)
+    target = int(tr.header["entries"][2]["addr"], 16)
+    after_call = next(s for s in tr.steps if s.pc == target)  # 새 페이지 진입이라 스냅샷이 있다
+    assert after_call.stk[0] == call + 2  # call rax(2바이트)가 쌓은 복귀 주소
+    before = next(s for s in tr.steps if s.stk is not None and s.pc == int(tr.header["entries"][0]["addr"], 16))
+    assert before.stk[0] == call  # 그보다 앞 스냅샷에는 쌓기 전 값(페이로드)이 보인다
+
+
+def test_pivot_back_onto_used_slot_is_rejected(builder):
+    spec = {"chain": [RET, {"pick": {"asm": "^pop rsp; ret$"}, "rsp_to": hex(FRAME + 8)}, RET]}
+    with pytest.raises(ValueError, match="서로 다른 값"):
+        builder.spec_trace("t-pivot-bad", spec)
+
+
+def test_pivot_to_new_stack(builder):
+    spec = {"chain": [RET, {"pick": {"asm": "^pop rsp; ret$"}, "rsp_to": "0x7ffff0001000"}, RET, RET]}
+    tr = builder.spec_trace("t-pivot", spec)
+    assert _ret_mismatches(tr) == []
+    assert any(s.sp is not None and 0x7FFFF0001000 <= s.sp < 0x7FFFF0002000 for s in tr.steps)
+
+
+@pytest.mark.parametrize(
+    "entry, needle",
+    [
+        ({"pick": {"asm": "^pop rdi; ret$"}, "pops": ["0x1", "0x2"]}, "pops 값 1개가 남았습니다"),
+        ({"pick": {"asm": "^ret$"}, "rsp_to": "0x7ffff0001000"}, "rsp_to를 쓸 명령"),
+        ({"pick": {"asm": "^ret$"}, "sys": 59}, "syscall이 없습니다"),
+    ],
+)
+def test_unused_entry_options_are_errors(builder, entry, needle):
+    with pytest.raises(ValueError, match=needle):
+        builder.spec_trace("t-opt", {"chain": [entry]})
+
+
+def test_pops_accept_module_notation(builder):
+    tr = builder.spec_trace("t-pops", {"chain": [{"pick": {"asm": "^pop rdi; ret$"}, "pops": ["rop_vault+0x404060"]}, RET]})
+    assert tr.steps[0].stk[12] == 0x404060  # vuln 복귀 슬롯(FRAME) 다음 칸 = pop rdi가 꺼낼 값
+
+
+@pytest.mark.parametrize(
+    "code, kind, delta, writes",
+    [
+        (b"\x58", "pop", 8, ()),  # pop rax
+        (b"\xf3\x48\x0f\xb8\xc3", "none", 0, ()),  # popcnt rax, rbx — pop이 아님(E3)
+        (b"\x48\x83\xc4\x18", "adjust", 0x18, ()),  # add rsp, 0x18
+        (b"\x48\x89\x44\x24\x08", "none", 0, (8,)),  # mov [rsp+8], rax — 실행 중 스택 쓰기
+        (b"\xc9", "unknown", 0, ()),  # leave
+        (b"\x5c", "unknown", 0, ()),  # pop rsp
+    ],
+)
+def test_stack_effect_is_independent_of_gadget_db(code, kind, delta, writes):
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+    md.detail = True
+    eff = _stack_effect(next(md.disasm(code, 0x1000)), "t")
+    assert (eff.kind, eff.delta, eff.writes) == (kind, delta, writes)
+
+
+def test_sixteen_bit_stack_ops_are_rejected():
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+    md.detail = True
+    for code in (b"\x66\x58", b"\x66\x50"):  # pop ax, push ax
+        with pytest.raises(ValueError, match="16비트"):
+            _stack_effect(next(md.disasm(code, 0x1000)), "t")
+
+
+@pytest.mark.parametrize("folder", [EXTRA_DIR, EXAMPLES])
+def test_committed_synth_traces_match_their_spec(folder):
+    """커밋된 합성 트레이스가 지금 사례 파일의 스펙으로 만든 것인지(스펙만 고치고 다시 만들지 않은 경우를 잡음)."""
+    for case in load_cases(folder, ROOT):
+        for chk in case["checks"]:
+            path = ROOT / trace_of(chk)
+            if "synth" in chk and path.exists():
+                assert trace_header(path).get("spec") == chk["synth"], f"{case['id']}/{chk['id']}"
+
+
+def test_stale_synth_trace_is_flagged(tmp_path):
+    """스펙을 바꿨는데 트레이스는 예전 것이면 실행기는 ⚠️로 표시하고 1로 끝난다(지적 5)."""
+    cases = tmp_path / "cases"
+    cases.mkdir()
+    case = _case(id="E1", checks=[{"id": "ex-ret-11", "synth": {"chain": [RET] * 5}, "expect": {"verdict": "정상"}}])
+    (cases / "E1-stale.json").write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
+    code = run_cases.main(["--cases", str(cases), "--out", str(tmp_path / "out")])
+    text = (tmp_path / "out" / "compare.md").read_text(encoding="utf-8")
+    assert code == 1
+    assert "⚠️ 스펙과 다른 옛 트레이스" in text and "오류 1" in text
+    assert synth.main(["--extra", "--cases", str(cases)]) == 1  # 합성 도구도 덮어쓰지 않고 경고
+
+
+def test_synth_cli_guards():
+    with pytest.raises(SystemExit):
+        synth.main(["--extra", "--force"])  # --force는 --only와 함께
+    assert synth.main(["--extra", "--cases", str(ROOT / EXAMPLES), "--only", "E99"]) == 2
+
+
+JUNIT = '<testsuites><testsuite name="pytest" tests="{t}" failures="{f}" errors="{e}" skipped="{s}"/></testsuites>'
+
+
+@pytest.mark.parametrize(
+    "counts, want_pass, mark",
+    [
+        (None, True, "⚠️ 오류"),
+        ({"tests": 0, "failures": 0, "errors": 0, "skipped": 0}, True, "⚠️ 오류"),
+        ({"tests": 1, "failures": 0, "errors": 1, "skipped": 0}, False, "⚠️ 오류"),  # 준비 오류는 '실패'가 아니다
+        ({"tests": 1, "failures": 0, "errors": 0, "skipped": 1}, True, "⚠️ 오류"),  # skip은 '통과'가 아니다
+        ({"tests": 1, "failures": 0, "errors": 0, "skipped": 0}, True, "✅ 기대와 같음"),
+        ({"tests": 1, "failures": 1, "errors": 0, "skipped": 0}, True, "❌ 기대와 다름"),
+        ({"tests": 1, "failures": 1, "errors": 0, "skipped": 0}, False, "✅ 기대와 같음"),
+    ],
+)
+def test_unit_check_status(counts, want_pass, mark):
+    assert run_cases.unit_status(counts, want_pass)[1] == mark
+
+
+def test_junit_counts():
+    assert run_cases.junit_counts(JUNIT.format(t=2, f=1, e=0, s=1)) == {"tests": 2, "failures": 1, "errors": 0, "skipped": 1}
+
+
+def test_only_runs_go_to_an_uncommitted_folder():
+    assert run_cases.extra_out(None, None) == ROOT / "results" / "w13"
+    assert run_cases.extra_out(None, {"E1"}) == ROOT / "results" / "w13-only.tmp"
+    assert run_cases.extra_out(Path("x"), {"E1"}) == Path("x")
