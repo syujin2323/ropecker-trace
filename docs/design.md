@@ -141,3 +141,18 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
   - rop_vault 자체의 주소는 과목 원본과 같다.
 - 수집: `collect/` 이미지(debian bookworm + qemu-user + gdb-multiarch)에서 `qemu-x86_64 -L target/sysroot -g <port>`에 gdb Python API로 붙어 `main`부터 한 명령씩 실행한다. Debian 크로스 libc(2.36)는 쓰지 않는다.
   - 대상은 빈 환경 변수(`env -i`)와 고정 시드(`qemu -seed 1`)로 실행한다. 환경 변수 길이가 argv 문자열 주소를 바꿔 libc 경로가 달라지고, AT_RANDOM이 스택 값을 바꾸기 때문이다. 그래서 같은 입력이면 같은 트레이스 파일이 나온다(`collect/README.md` "재현성").
+
+## 8. 13주차 추가 검증 사례 (`cases/extra/`)
+
+고정 사례는 그대로 두고, 추가 사례를 **사례 하나 = 파일 하나**(`cases/extra/E<번호>-<이름>.json`)로 둡니다. 작성 요령과 전체 문법은 [cases/extra/README.md](../cases/extra/README.md), 읽기·형식 검사는 `ropecker/extra.py`입니다.
+
+- **기대 결과는 실행 전에** 적어 커밋합니다. 실행 뒤에는 `결과 분석`(분류·근거·처리)만 더하고 `기대 결과`·`expect`는 바꾸지 않습니다.
+- check는 세 종류입니다: 수집한 트레이스(`trace`), 합성 트레이스(`synth` 스펙 → `traces/extra/<check id>.jsonl.gz`), 단위 테스트(`pytest`, `cases/extra/` 아래, 기본 `uv run pytest`에는 들어가지 않음).
+- **`expect` 키:** 고정 사례의 `verdict`·`chain_len`·`chain_len_min`·`chain_len_max`·`gadgets_nonempty`·`trace_end`에 더해, 추가 사례에서만 쓰는 키가 셋 있습니다.
+  - `past_len`·`future_len`: 판정한 체크포인트의 과거·미래 연쇄(결과 v1의 같은 이름 키)
+  - `detect_step_max`: 이 스텝 이하에서 ROP로 탐지
+  - 판정 함수는 고정 사례와 같은 `ropecker.cases.judge`입니다.
+- **합성 트레이스 헤더:** `collector: "synth"`, `case`(check id), `spec`(사례 파일의 스펙 그대로), `entries`(실제로 쓰인 체인 항목: `addr`, `how` = pick·addr·nongadget, `gadget` 여부, 실행한 명령 `asm`)이 들어갑니다. 고정 사례 합성 트레이스와 달리 `truth`(정답)는 없습니다. 판정 기준은 사례 파일의 `expect`입니다.
+  - 스냅샷 규칙은 수집기와 같습니다: 실행 페이지가 바뀐 스텝과 syscall 스텝에 `sp`·`stk`. `stk` 길이는 `stack_qwords`(기본 32, 수집기와 같음)입니다.
+  - 한 번 만든 합성 트레이스는 `--force` 없이는 덮어쓰지 않습니다. 구현 버그를 고친 뒤에도 같은 입력으로 다시 실행하기 위해서입니다.
+- **실행과 결과:** `uv run python scripts/run_cases.py --cases cases/extra` → `results/w13/compare.md`(사례 표, 기대와 다른 결과를 모은 반례 목록 C1…), `results/w13/runs/`(전·후 콘솔 로그와 결과 JSON, 단위 테스트 로그). 기대와 다른 결과는 실행 실패가 아니라 반례이므로 종료 코드에 넣지 않고, 오류만 1로 끝납니다.
