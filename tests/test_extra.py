@@ -13,7 +13,15 @@ import pytest
 from ropecker import synth
 from ropecker import trace as trace_io
 from ropecker.detector import detect
-from ropecker.extra import EXTRA_DIR, load_cases, synth_problems, trace_header, trace_of, validate_case
+from ropecker.extra import (
+    EXTRA_DIR,
+    load_cases,
+    same_spec,
+    synth_problems,
+    trace_header,
+    trace_of,
+    validate_case,
+)
 from ropecker.gadgetdb import GadgetDB
 from ropecker.image import Image
 from ropecker.model import Params
@@ -302,6 +310,11 @@ def test_pops_accept_module_notation(builder):
         (b"\x48\x89\x44\x24\x08", "none", 0, (8,)),  # mov [rsp+8], rax — 실행 중 스택 쓰기
         (b"\xc9", "unknown", 0, ()),  # leave
         (b"\x5c", "unknown", 0, ()),  # pop rsp
+        (b"\xc8\x10\x00\x00", "adjust", -0x18, (-8,)),  # enter 0x10, 0: rbp를 쌓고 0x10 더 내림(capstone은 rsp 쓰기를 안 알려 줌)
+        (b"\xc8\x10\x00\x01", "unknown", 0, ()),  # enter 0x10, 1(중첩) → rsp_to 필요
+        (b"\x0f\xa1", "pop", 8, ()),  # pop fs: 64비트 모드에서 8바이트
+        (b"\x48\x0f\xb1\x0c\x24", "none", 0, (0,)),  # cmpxchg [rsp], rcx: capstone은 '읽기'로만 표시
+        (b"\x8f\x44\x24\x08", "pop", 8, (16,)),  # pop [rsp+8]: rsp를 올린 뒤의 주소에 씀
     ],
 )
 def test_stack_effect_is_independent_of_gadget_db(code, kind, delta, writes):
@@ -314,7 +327,7 @@ def test_stack_effect_is_independent_of_gadget_db(code, kind, delta, writes):
 def test_sixteen_bit_stack_ops_are_rejected():
     md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
     md.detail = True
-    for code in (b"\x66\x58", b"\x66\x50"):  # pop ax, push ax
+    for code in (b"\x66\x58", b"\x66\x50", b"\x66\x6a\x10"):  # pop ax, push ax, push word 0x10
         with pytest.raises(ValueError, match="16비트"):
             _stack_effect(next(md.disasm(code, 0x1000)), "t")
 
@@ -326,7 +339,7 @@ def test_committed_synth_traces_match_their_spec(folder):
         for chk in case["checks"]:
             path = ROOT / trace_of(chk)
             if "synth" in chk and path.exists():
-                assert trace_header(path).get("spec") == chk["synth"], f"{case['id']}/{chk['id']}"
+                assert same_spec(trace_header(path).get("spec"), chk["synth"]), f"{case['id']}/{chk['id']}"
 
 
 def test_stale_synth_trace_is_flagged(tmp_path):
@@ -375,3 +388,58 @@ def test_only_runs_go_to_an_uncommitted_folder():
     assert run_cases.extra_out(None, None) == ROOT / "results" / "w13"
     assert run_cases.extra_out(None, {"E1"}) == ROOT / "results" / "w13-only.tmp"
     assert run_cases.extra_out(Path("x"), {"E1"}) == Path("x")
+
+
+# ---------------------------------------------------------------- 재검증 반영(N1~N7)
+def test_pivot_into_overflowed_buffer_builds(builder):
+    """넘친 버퍼('A')는 덮어쓸 수 있는 기본값이라 그 자리로 피벗해 체인을 이어도 된다(N1)."""
+    spec = {"chain": [{"pick": {"asm": "^pop rsp; ret$"}, "rsp_to": hex(FRAME - 0x48)}] + [RET] * 5, "ending": "stop"}
+    tr = builder.spec_trace("t-buf", spec)
+    assert _ret_mismatches(tr) == []
+    assert tr.steps[0].stk[2] != 0x4141414141414141  # 버퍼 첫 칸(FRAME-0x48)에 체인 주소가 깔림
+
+
+def test_big_stack_stores_are_rejected():
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+    md.detail = True
+    with pytest.raises(ValueError, match="수백 바이트"):
+        _stack_effect(next(md.disasm(b"\x0f\xae\x04\x24", 0x1000)), "t")  # fxsave [rsp]
+
+
+def test_branch_target_read_from_stack(builder):
+    """목적지를 스택에서 읽는 call [rsp+x]는 그 칸에 다음 항목 주소가 깔린다(N3)."""
+    spec = {"chain": [RET, {"pick": {"asm": r"^call qword ptr \[rsp \+ 0x38\]$"}}, {"pick": {"asm": "^pop rbx; ret$"}}, RET]}
+    tr = builder.spec_trace("t-callmem", spec)
+    call = int(tr.header["entries"][1]["addr"], 16)
+    k = next(i for i, s in enumerate(tr.steps) if s.pc == call)
+    assert tr.steps[k].stk is not None and tr.steps[k].stk[0x38 // 8] == tr.steps[k + 1].pc
+    assert _ret_mismatches(tr) == []
+
+
+def test_ret_pick_never_returns_retf(builder):
+    with pytest.raises(ValueError, match="조건에 맞는 gadget이 없습니다"):
+        builder.spec_trace("t-retf", {"chain": [{"pick": {"asm": "^retf", "kind": "ret"}, "page": "any"}]})
+
+
+def test_same_spec_ignores_memo():
+    a = {"chain": [RET, {"pick": {"asm": "^ret$"}, "메모": "둘째"}], "ending": "stop"}
+    assert same_spec(a, {"chain": [RET, RET], "ending": "stop"})
+    assert not same_spec(a, {"chain": [RET], "ending": "stop"})
+
+
+def test_corrupt_trace_is_flagged_not_crashed(tmp_path, monkeypatch):
+    """비었거나 깨진 합성 트레이스는 실행기를 멈추지 않고 ⚠️로 표시된다(N4)."""
+    bad = tmp_path / "bad.jsonl.gz"
+    bad.write_bytes(b"")
+    with pytest.raises(ValueError, match="트레이스를 읽지 못함"):
+        trace_header(bad)
+    import ropecker.extra as extra_mod
+
+    monkeypatch.setattr(extra_mod, "trace_of", lambda chk: bad)
+    cases = tmp_path / "cases"
+    cases.mkdir()
+    case = _case(id="E1", checks=[{"id": "t-bad", "synth": {"chain": [RET]}, "expect": {"verdict": "ROP"}}])
+    (cases / "E1-bad.json").write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
+    code = run_cases.main(["--cases", str(cases), "--out", str(tmp_path / "out")])
+    assert code == 1
+    assert "⚠️ 트레이스를 읽지 못함" in (tmp_path / "out" / "compare.md").read_text(encoding="utf-8")
