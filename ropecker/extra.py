@@ -294,11 +294,34 @@ def load_cases(path: str | Path = EXTRA_DIR, root: str | Path = ".") -> list[dic
 
 
 def trace_header(path: str | Path) -> dict:
-    """트레이스 파일의 헤더(첫 줄)만 읽는다. 합성 트레이스가 지금 스펙으로 만든 것인지 볼 때 쓴다."""
+    """트레이스 파일의 헤더(첫 줄)만 읽는다. 합성 트레이스가 지금 스펙으로 만든 것인지 볼 때 쓴다.
+
+    비었거나 깨진 파일이면 ValueError("트레이스를 읽지 못함 …").
+    """
     from .trace import _open_text
 
-    with _open_text(Path(path), "r") as f:
-        return json.loads(f.readline())
+    p = Path(path)
+    try:
+        with _open_text(p, "r") as f:
+            header = json.loads(f.readline())
+    except (OSError, EOFError, ValueError) as e:  # gzip 오류는 OSError·EOFError, JSON 오류는 ValueError
+        raise ValueError(f"트레이스를 읽지 못함({p.name}: {e})") from e
+    if not isinstance(header, dict):
+        raise ValueError(f"트레이스를 읽지 못함({p.name}: 첫 줄이 헤더 객체가 아님)")
+    return header
+
+
+def _spec_key(spec):
+    """스펙 비교용: 체인 항목의 '메모'는 입력이 아니므로 뺀다."""
+    if not isinstance(spec, dict) or not isinstance(spec.get("chain"), list):
+        return spec
+    chain = [{k: v for k, v in e.items() if k != "메모"} if isinstance(e, dict) else e for e in spec["chain"]]
+    return {**spec, "chain": chain}
+
+
+def same_spec(a, b) -> bool:
+    """두 합성 스펙이 같은 입력인가(메모만 다르면 같다)."""
+    return _spec_key(a) == _spec_key(b)
 
 
 def trace_of(chk: dict) -> Path:

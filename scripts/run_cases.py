@@ -204,7 +204,7 @@ def run_pytest(node: str, runs: Path, name: str) -> dict:
 
 def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path, synth_hint: str) -> dict:
     """추가 사례 check 하나를 실행해 표 한 행에 쓸 값을 돌려준다."""
-    from ropecker.extra import params_for, trace_header, trace_of
+    from ropecker.extra import params_for, same_spec, trace_header, trace_of
 
     name, exp = chk["id"], chk["expect"]
     if "pytest" in chk:
@@ -224,9 +224,16 @@ def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path, synth
     if not (ROOT / trace).exists():
         hint = gen if "synth" in chk else "수집 전"
         return {**row, "before": "—", "after": "—", "mark": f"⏳ 트레이스 없음({hint})", "problems": [], "evidence": []}
-    if "synth" in chk and trace_header(ROOT / trace).get("spec") != chk["synth"]:
-        stale = f"⚠️ 스펙과 다른 옛 트레이스(스펙을 되돌리거나 {gen[:-1]} --force`로 다시 만드세요)"
-        return {**row, "before": "—", "after": "—", "mark": stale, "problems": [], "evidence": []}
+    if "synth" in chk:
+        again = f"{gen[:-1]} --force`"
+        try:
+            current = same_spec(trace_header(ROOT / trace).get("spec"), chk["synth"])
+        except ValueError as e:
+            return {**row, "before": "—", "after": "—", "mark": f"⚠️ {e} — {again}로 다시 만드세요", "problems": [],
+                    "evidence": []}
+        if not current:
+            stale = f"⚠️ 스펙과 다른 옛 트레이스(스펙을 되돌리거나 {again}로 다시 만드세요)"
+            return {**row, "before": "—", "after": "—", "mark": stale, "problems": [], "evidence": []}
     before = run_cli(trace, params, "before", runs, name, args)
     after = run_cli(trace, params, "after", runs, name, args)
     row["before"] = describe_before(before)
