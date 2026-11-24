@@ -21,6 +21,10 @@ DIRECTIONS = ("경계값", "표기 변형", "반복·동시", "자원 고갈", "
 KINDS = ("정상", "위반", "경계")
 CLASSES = ("구현 버그", "명세상 미지원", "원논문 한계", "반례 아님")  # 13주차 자료 9쪽 + 기대와 같음
 REQUIRED = ("id", "제목", "담당", "방향", "구분", "입력", "기대 결과", "checks")
+CASE_KEYS = frozenset(REQUIRED) | {"작성일", "근거", "params", "결과 분석", "메모"}
+CHECK_KEYS = frozenset({"id", "trace", "synth", "pytest", "expect", "params", "args", "결과 분석", "메모"})
+ANALYSIS_KEYS = frozenset({"분류", "근거", "처리", "실제 결과", "메모"})
+INT_EXPECT_KEYS = ("chain_len", "chain_len_min", "chain_len_max", "past_len", "future_len", "detect_step_max")
 PARAM_KEYS = frozenset({"window", "threshold", "cmp"})
 RESERVED_ARGS = frozenset({"--trace", "--json", "--no-check", "--verbose", "-v", "--window", "--threshold", "--cmp"})
 CASE_ID = re.compile(r"^E\d+$")
@@ -37,6 +41,19 @@ PAGE_MODES = ("new", "same", "any")
 SYNTH_MODULES = ("rop_vault", "libc.so.6")
 GADGET_KINDS = ("ret", "jmp_ind", "call_ind")
 ADDR_TEXT = re.compile(r"^(0x[0-9a-fA-F]+|(rop_vault|libc\.so\.6)\+0x[0-9a-fA-F]+)$")
+
+
+def _reserved(args: list[str]) -> list[str]:
+    """실행기가 붙이는 옵션과 겹치는 인자. '--threshold=12'와 줄임말('--thr')도 잡는다(argparse가 받아 줌)."""
+    hits = []
+    for a in args:
+        if not a.startswith("-"):
+            continue
+        name = a.split("=", 1)[0]
+        long_prefix = name.startswith("--") and len(name) > 2 and any(r.startswith(name) for r in RESERVED_ARGS)
+        if name in RESERVED_ARGS or long_prefix:
+            hits.append(a)
+    return hits
 
 
 def _is_num(v) -> bool:
@@ -134,7 +151,7 @@ def _params_problems(params, where: str) -> list[str]:
     if "cmp" in params and params["cmp"] not in ("ge", "gt"):
         out.append(f"{where} params.cmp는 'ge' 또는 'gt'")
     for key in ("window", "threshold"):
-        if key in params and (not isinstance(params[key], int) or params[key] <= 0):
+        if key in params and (not _is_num(params[key]) or params[key] <= 0):
             out.append(f"{where} params.{key}는 양의 정수")
     return out
 
@@ -142,9 +159,13 @@ def _params_problems(params, where: str) -> list[str]:
 def _analysis_problems(analysis, where: str) -> list[str]:
     if not isinstance(analysis, dict):
         return [f"{where} '결과 분석'은 객체여야 합니다"]
+    out = []
+    unknown = set(analysis) - ANALYSIS_KEYS
+    if unknown:
+        out.append(f"{where} '결과 분석'에 모르는 키 {sorted(unknown)} (쓸 수 있는 키: {sorted(ANALYSIS_KEYS)})")
     if "분류" in analysis and analysis["분류"] not in CLASSES:
-        return [f"{where} 분류는 {list(CLASSES)} 중 하나"]
-    return []
+        out.append(f"{where} 분류는 {list(CLASSES)} 중 하나")
+    return out
 
 
 def _check_problems(chk, case_id: str) -> list[str]:
@@ -153,6 +174,9 @@ def _check_problems(chk, case_id: str) -> list[str]:
     cid = chk.get("id", "")
     where = f"{case_id}/{cid or '?'}"
     out = []
+    unknown = set(chk) - CHECK_KEYS
+    if unknown:
+        out.append(f"{where}: check에 모르는 키 {sorted(unknown)} (쓸 수 있는 키: {sorted(CHECK_KEYS)})")
     if not isinstance(cid, str) or not CHECK_ID.match(cid):
         out.append(f"{where}: check id는 영문 소문자·숫자·'-'만 (예: e2-loop-chain)")
     if "expect" not in chk or not isinstance(chk["expect"], dict):
@@ -167,13 +191,20 @@ def _check_problems(chk, case_id: str) -> list[str]:
         if set(exp) != {"pass"} or not isinstance(exp["pass"], bool):
             out.append(f"{where}: pytest check의 expect는 {{\"pass\": true}} 또는 {{\"pass\": false}}")
     else:
-        if "trace" not in chk and "synth" not in chk:
-            out.append(f"{where}: trace(수집한 트레이스 경로)나 synth(합성 스펙) 중 하나가 필요합니다")
+        if ("trace" in chk) == ("synth" in chk):
+            out.append(f"{where}: trace(수집한 트레이스 경로)와 synth(합성 스펙) 중 정확히 하나를 씁니다")
         unknown = set(exp) - EXPECT_KEYS
         if unknown:
             out.append(f"{where}: 모르는 기대값 키 {sorted(unknown)} (쓸 수 있는 키: {sorted(EXPECT_KEYS)})")
         if "verdict" not in exp or exp.get("verdict") not in ("정상", "ROP"):
             out.append(f"{where}: expect.verdict는 '정상' 또는 'ROP'")
+        for key in INT_EXPECT_KEYS:
+            if key in exp and (not _is_num(exp[key]) or exp[key] < 0):
+                out.append(f"{where}: expect.{key}는 0 이상의 정수 (따옴표 없이, 예: 11)")
+        if "gadgets_nonempty" in exp and not isinstance(exp["gadgets_nonempty"], bool):
+            out.append(f"{where}: expect.gadgets_nonempty는 true 또는 false")
+        if "trace_end" in exp and (not isinstance(exp["trace_end"], str) or not exp["trace_end"]):
+            out.append(f"{where}: expect.trace_end는 문자열 (예: \"exit:0\", \"syscall:59\", \"max_steps\")")
         if "synth" in chk:
             out += synth_problems(chk["synth"], where)
         if "trace" in chk and (not isinstance(chk["trace"], str) or not chk["trace"].startswith("traces/")):
@@ -181,8 +212,8 @@ def _check_problems(chk, case_id: str) -> list[str]:
         args = chk.get("args", [])
         if not isinstance(args, list) or not all(isinstance(a, str) for a in args):
             out.append(f"{where}: args는 문자열 목록 (예: [\"--align-check\"])")
-        elif RESERVED_ARGS.intersection(args):
-            out.append(f"{where}: args에 {sorted(RESERVED_ARGS.intersection(args))}는 쓰지 않습니다(실행기가 붙임)")
+        elif hits := _reserved(args):
+            out.append(f"{where}: args에 {hits}는 쓰지 않습니다(실행기가 붙임, 줄임말·'=값' 형태 포함)")
     if "params" in chk:
         out += _params_problems(chk["params"], where)
     if "결과 분석" in chk:
@@ -195,6 +226,9 @@ def validate_case(case) -> list[str]:
     if not isinstance(case, dict):
         return ["사례 파일의 최상위는 객체여야 합니다"]
     out = [f"필수 항목 '{k}'가 없습니다" for k in REQUIRED if k not in case]
+    unknown = set(case) - CASE_KEYS - {"_file"}
+    if unknown:
+        out.append(f"모르는 키 {sorted(unknown)} (쓸 수 있는 키: {sorted(CASE_KEYS)})")
     if out:
         return out
     cid = case["id"]
@@ -257,6 +291,14 @@ def load_cases(path: str | Path = EXTRA_DIR, root: str | Path = ".") -> list[dic
             case["_file"] = f.as_posix()
         cases.append(case)
     return sorted(cases, key=lambda c: int(c["id"][1:]))
+
+
+def trace_header(path: str | Path) -> dict:
+    """트레이스 파일의 헤더(첫 줄)만 읽는다. 합성 트레이스가 지금 스펙으로 만든 것인지 볼 때 쓴다."""
+    from .trace import _open_text
+
+    with _open_text(Path(path), "r") as f:
+        return json.loads(f.readline())
 
 
 def trace_of(chk: dict) -> Path:
