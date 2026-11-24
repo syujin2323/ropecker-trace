@@ -103,8 +103,9 @@ uv run python scripts/run_cases.py
 고정 사례 3종은 그대로 두고, 정상·위반·경계 입력을 `cases/extra/`에 사례 하나 = 파일 하나로 더해 반례를 찾습니다. 기대 결과는 실행 전에 적고, 기대와 다른 결과는 반례 목록(C1…)으로 모아 구현 버그·명세상 미지원·원논문 한계로 분류합니다. 형식과 작성 순서는 [cases/extra/README.md](cases/extra/README.md), 계획과 담당은 이슈 #13에 있습니다.
 
 ```bash
-uv run python -m ropecker.synth --extra                  # 합성 스펙 → traces/extra/ (이미 있는 트레이스는 건너뜀)
-uv run python scripts/run_cases.py --cases cases/extra   # → results/w13/compare.md(사례 표 + 반례 목록), results/w13/runs/
+uv run python -m ropecker.synth --extra --only E7                   # 합성 스펙 → traces/extra/ (이미 있는 트레이스는 건너뜀)
+uv run python scripts/run_cases.py --cases cases/extra --only E7    # 자기 사례만 → results/w13-only.tmp/ (커밋 안 함)
+uv run python scripts/run_cases.py --cases cases/extra              # 전체 → results/w13/compare.md(사례 표 + 반례 목록), results/w13/runs/
 ```
 
 ## 원논문과의 차이
