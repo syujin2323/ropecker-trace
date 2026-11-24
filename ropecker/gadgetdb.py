@@ -204,6 +204,10 @@ class GadgetDB:
         """addr(런타임 주소)에서 시작하는 gadget, 없으면 None. 반환 Gadget.addr도 런타임 주소."""
         return self._by_addr.get(addr)
 
+    def gadgets(self) -> list[Gadget]:
+        """모든 gadget(런타임 주소 순). 합성 트레이스 도구가 조건에 맞는 gadget을 고를 때 쓴다."""
+        return [self._by_addr[a] for a in sorted(self._by_addr)]
+
     def __len__(self) -> int:
         return len(self._by_addr)
 
