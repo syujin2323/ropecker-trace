@@ -21,10 +21,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import capstone
+from capstone import x86
 from elftools.elf.elffile import ELFFile
 
 from . import trace as trace_io
-from .gadgetdb import GadgetDB, _ret_adv, _rsp_delta
+from .gadgetdb import GadgetDB
 from .image import Image, classify, exec_segments, module_entry
 from .model import TRACE_FMT, TRACE_V, Gadget, Step, Trace, hx, parse_addr
 
@@ -97,6 +98,117 @@ class _Planned:
     pc: int
     rsp: int
     sys: int | None = None
+
+
+_SP_REGS = frozenset({x86.X86_REG_RSP, x86.X86_REG_ESP, x86.X86_REG_SP, x86.X86_REG_SPL})
+
+
+@dataclass(frozen=True)
+class _Effect:
+    """명령 하나의 스택 효과(합성 도구 자체 모델 — gadget DB의 sd/adv 계산과 독립).
+
+    kind: none | pop | push | adjust(add/sub/lea rsp) | unknown(rsp를 정적으로 모름 → rsp_to 필요)
+    writes: rsp 기준으로 메모리에 쓰는 8바이트 칸의 오프셋(값은 레지스터에 있어 모름)
+    """
+
+    kind: str
+    delta: int = 0
+    writes: tuple[int, ...] = ()
+
+
+def _stack_effect(ins, where: str) -> _Effect:
+    """합성 트레이스용 스택 모델. 16비트 push/pop은 qword 단위 스택 모델로 표현할 수 없어 오류로 알린다.
+
+    gadget DB와 계산을 나눠 둔 이유: DB의 rsp 계산에 버그가 있으면(예: popcnt를 pop으로 셈) 합성 트레이스도
+    같은 버그를 물려받아 그 버그를 드러내지 못한다(13주차 E3).
+    """
+    m, ops = ins.mnemonic, ins.operands
+    if m in ("popf", "pushf"):
+        raise ValueError(f"{where}: 16비트 {m}는 합성 스펙에서 지원하지 않습니다(단위 check로 시험)")
+    if m in ("pop", "popfq"):
+        if m == "pop" and ops and ops[0].type == x86.X86_OP_REG and ops[0].reg in _SP_REGS:
+            return _Effect("unknown")  # pop rsp: 스택 피벗
+        if m == "pop" and ops and ops[0].size != 8:
+            raise ValueError(f"{where}: 16비트 pop은 합성 스펙에서 지원하지 않습니다(단위 check로 시험)")
+        return _Effect("pop", QWORD)
+    if m in ("push", "pushfq"):
+        if m == "push" and ops and ops[0].type != x86.X86_OP_IMM and ops[0].size != 8:
+            raise ValueError(f"{where}: 16비트 push는 합성 스펙에서 지원하지 않습니다(단위 check로 시험)")
+        return _Effect("push", -QWORD)
+    rsp_dst = len(ops) == 2 and ops[0].type == x86.X86_OP_REG and ops[0].reg == x86.X86_REG_RSP
+    if rsp_dst and m in ("add", "sub") and ops[1].type == x86.X86_OP_IMM:
+        return _Effect("adjust", ops[1].imm if m == "add" else -ops[1].imm)
+    if rsp_dst and m == "lea":
+        mem = ops[1].mem
+        if mem.base == x86.X86_REG_RSP and mem.index == 0 and mem.segment == 0:
+            return _Effect("adjust", mem.disp)
+    if _SP_REGS.intersection(ins.regs_access()[1]):
+        return _Effect("unknown")  # leave, mov rsp, xchg rsp, add esp, enter 등
+    writes: list[int] = []
+    for op in ops:
+        if op.type == x86.X86_OP_MEM and op.access & capstone.CS_AC_WRITE and op.mem.base == x86.X86_REG_RSP:
+            if op.mem.index != 0:
+                raise ValueError(f"{where}: rsp와 인덱스 레지스터로 스택에 쓰는 명령은 합성 스펙에서 지원하지 않습니다")
+            lo = op.mem.disp // QWORD * QWORD
+            hi = (op.mem.disp + max(op.size, 1) - 1) // QWORD * QWORD
+            writes += range(lo, hi + QWORD, QWORD)
+    return _Effect("none", 0, tuple(writes))
+
+
+class _SpecStack:
+    """합성 스택: 공격 페이로드(실행 전에 깔린 값)와 실행 중에 쓴 값을 나눠 기록한다(지적 1).
+
+    - payload: ret·pop이 읽어야 하는 값. 같은 칸에 서로 다른 두 값이 필요하면 만들 수 없는 스펙이다.
+    - runtime: push·call*·[rsp+x] 쓰기처럼 실행 중에 생긴 값(스텝 번호와 함께, 값을 모르면 None).
+    스냅샷은 그 스텝 *직전*의 상태다: 그보다 앞 스텝의 쓰기만 보인다.
+    """
+
+    def __init__(self) -> None:
+        self.payload: dict[int, int] = {}
+        self.runtime: dict[int, list[list]] = {}  # 주소 → [[스텝, 값 또는 None], …] (스텝 순)
+
+    def _last(self, addr: int, step: int) -> list | None:
+        hit = None
+        for w in self.runtime.get(addr, ()):
+            if w[0] >= step:
+                break
+            hit = w
+        return hit
+
+    def write(self, step: int, addr: int, value: int | None) -> None:
+        self.runtime.setdefault(addr, []).append([step, value])
+
+    def need(self, addr: int, value: int, why: str) -> None:
+        old = self.payload.get(addr)
+        if old is not None and old != value:
+            raise ValueError(
+                f"{why}: 스택 {hex(addr)} 칸에 서로 다른 값 {hex(old)}와 {hex(value)}가 필요합니다"
+                "(피벗 rsp_to가 이미 쓴 칸으로 돌아가는지 확인하세요)"
+            )
+        self.payload[addr] = value
+
+    def read(self, step: int, addr: int, want: int | None, why: str) -> int:
+        """step에서 addr을 읽는다. want(필요한 값)가 이미 깔린 값·실행 중에 쓴 값과 다르면 ValueError."""
+        w = self._last(addr, step)
+        if w is not None:
+            if w[1] is None:  # 레지스터 값을 쓴 칸: 그 레지스터가 읽는 쪽이 원하는 값이었다고 본다
+                w[1] = want if want is not None else 0
+            elif want is not None and w[1] != want:
+                raise ValueError(
+                    f"{why}: 스택 {hex(addr)}에는 실행 중에 쓴 {hex(w[1])}가 있어 {hex(want)}로 갈 수 없습니다"
+                    "(call*이 쌓은 복귀 주소라면 다음 항목을 pop이 있는 gadget으로 두어 꺼내 버리세요)"
+                )
+            return w[1]
+        if want is None:
+            return self.payload.get(addr, 0)
+        self.need(addr, want, why)
+        return want
+
+    def value(self, step: int, addr: int) -> int:
+        w = self._last(addr, step)
+        if w is not None:
+            return w[1] if w[1] is not None else 0
+        return self.payload.get(addr, 0)
 
 
 def _symbols(path: Path) -> dict[str, int]:
@@ -358,17 +470,37 @@ class Builder:
             seen += 1
         raise ValueError(f"조건에 맞는 gadget이 없습니다: {flt} (page={mode})")
 
+    def _plain(self, ins) -> bool:
+        """긴 조각에 넣어도 되는 '평범한' 명령: 분기·syscall이 아니고, push·스택 메모리 쓰기·rsp 피벗이 없음."""
+        if classify(ins) != "other":
+            return False
+        try:
+            eff = _stack_effect(ins, "")
+        except ValueError:
+            return False
+        return eff.kind in ("none", "pop", "adjust") and not eff.writes
+
     def _plain_before(self, module: str, addr: int) -> int | None:
-        """addr 바로 앞 명령(선형 디스어셈블 기준)이 분기·syscall·push가 아니고 rsp 변화를 알면 그 주소."""
+        """addr 바로 앞 명령(선형 디스어셈블 기준)이 평범한 명령이면 그 주소."""
         bounds = self._sweep(module)
         i = bisect_left(bounds, addr)
         if i == 0 or i >= len(bounds) or bounds[i] != addr:
             return None
         start = bounds[i - 1]
         ins = self._decode(start)
-        if start + ins.size != addr or classify(ins) != "other" or ins.mnemonic.startswith("push"):
+        if start + ins.size != addr or not self._plain(ins):
             return None
-        return start if _rsp_delta(ins) is not None else None
+        return start
+
+    def _plain_gadget(self, g: Gadget) -> bool:
+        """gadget의 끝 ret을 뺀 명령이 모두 평범한가(syscall·스택 쓰기가 든 조각은 긴 조각 재료로 쓰지 않음)."""
+        pc = g.addr
+        for _ in range(g.n - 1):
+            ins = self._decode(pc)
+            if not self._plain(ins):
+                return False
+            pc += ins.size
+        return pc == g.end and self._decode(pc).id == x86.X86_INS_RET
 
     def _nongadget(self, opts: dict, mode: str, used: set[int], prev: int | None) -> int:
         """gadget이 *아닌* 긴 조각(명령 n_min~n_max개, 끝은 ret)의 시작 주소.
@@ -383,7 +515,7 @@ class Builder:
         for g in self._gadgets():
             if g.kind != "ret" or g.n != 6 or not g.aligned or g.sd is None or g.adv is None:
                 continue
-            if not self._in_module(g.addr, module):
+            if not self._in_module(g.addr, module) or not self._plain_gadget(g):
                 continue
             start, n = g.addr, g.n
             while n < n_max:
@@ -400,42 +532,47 @@ class Builder:
             seen += 1
         raise ValueError(f"조건에 맞는 긴 조각(gadget 아님)이 없습니다: {opts} (page={mode})")
 
-    def _execute(self, entry: dict, start: int, nxt: int, rsp: int, mem: dict[int, int],
+    def _execute(self, entry: dict, start: int, nxt: int, rsp: int, stack: _SpecStack,
                  plan: list[_Planned]) -> tuple[int, list[str]]:
-        """체인 항목 하나를 간접 분기까지 따라가며 스텝과 스택 값을 채운다. (끝난 뒤 rsp, 명령 목록)
+        """체인 항목 하나를 간접 분기까지 따라가며 스텝을 계획하고 스택을 채운다. (끝난 뒤 rsp, 명령 목록)
 
-        - ret: 스택의 다음 슬롯에 nxt(다음 항목 주소)를 둔다. ret imm16이면 그만큼 더 건너뛴다.
-        - jmp*/call*: 레지스터 값은 트레이스에 없으므로 '목적지 = nxt'로 둔다(call*은 복귀 주소를 쌓음).
-        - 직접 jmp는 따라가고(gadget 접합), 조건 분기(jcc·loop 계열)는 '안 뜀'으로 본다.
-        - pop은 pops 값을 차례로 쓰고(없으면 0), rsp를 정적으로 모르는 명령은 rsp_to로 옮긴다.
+        - ret: 스택 맨 위에서 nxt(다음 항목 주소)를 꺼낸다. ret imm16이면 그만큼 더 건너뛴다.
+        - jmp*/call*: 레지스터 값은 트레이스에 없으므로 '목적지 = nxt'로 둔다. call*은 복귀 주소를 쌓는다.
+        - 직접 jmp는 따라가고(gadget 접합), 조건 분기(jcc·loop 계열)는 '뛰지 않음'으로 본다.
+        - pop은 pops 값을 차례로 꺼내고(없으면 그 칸의 값), rsp를 정적으로 모르는 명령은 rsp_to로 옮긴다.
+        - push·call*·[rsp+x] 쓰기는 실행 중에 쓴 값으로 따로 기록한다(앞 스텝의 스냅샷에는 보이지 않음).
         """
-        pops = list(entry.get("pops", []))
-        rsp_to = entry.get("rsp_to")
+        pops = [self._addr(v) for v in entry.get("pops", [])]
+        rsp_to = self._addr(entry["rsp_to"]) if "rsp_to" in entry else None
+        used_sys = False
         texts: list[str] = []
         pc = start
         for _ in range(WALK_LIMIT):
             ins = self._decode(pc)
             kind = classify(ins)
             text = f"{ins.mnemonic} {ins.op_str}".strip()
+            where = f"{hex(pc)} '{text}'"
             texts.append(text)
+            step = len(plan)
             if kind == "syscall":
                 if "sys" not in entry:
-                    raise ValueError(f"{hex(pc)} syscall: 이 항목에 sys(시스템 콜 번호)를 적어 주세요")
+                    raise ValueError(f"{where}: 이 항목에 sys(시스템 콜 번호)를 적어 주세요")
                 plan.append(_Planned(pc, rsp, entry["sys"]))
+                used_sys = True
                 pc += ins.size
                 continue
             plan.append(_Planned(pc, rsp))
             if kind == "ret":
-                adv = _ret_adv(ins)
-                if adv is None:
-                    raise ValueError(f"{hex(pc)} '{text}': retf 계열은 합성 스펙에서 지원하지 않습니다")
-                mem[rsp] = nxt
-                return rsp + adv, texts
+                if ins.id != x86.X86_INS_RET:
+                    raise ValueError(f"{where}: retf 계열은 합성 스펙에서 지원하지 않습니다")
+                stack.read(step, rsp, nxt, f"{where}이 다음 항목 주소를 꺼냄")
+                rsp += QWORD + (ins.operands[0].imm if ins.operands else 0)
+                break
             if kind in ("jmp_ind", "call_ind"):
                 if kind == "call_ind":
                     rsp -= QWORD
-                    mem[rsp] = pc + ins.size
-                return rsp, texts
+                    stack.write(step, rsp, pc + ins.size)
+                break
             if kind == "jmp":
                 pc = ins.operands[0].imm
                 continue
@@ -443,29 +580,41 @@ class Builder:
                 pc += ins.size
                 continue
             if kind != "other":
-                raise ValueError(f"{hex(pc)} '{text}': 체인 항목 안에 올 수 없는 명령({kind})")
-            delta = _rsp_delta(ins)
-            if delta is None:
+                raise ValueError(f"{where}: 체인 항목 안에 올 수 없는 명령({kind})")
+            eff = _stack_effect(ins, where)
+            for off in eff.writes:
+                stack.write(step, rsp + off, None)
+            if eff.kind == "pop":
+                stack.read(step, rsp, pops.pop(0) if pops else None, f"{where}가 pops 값을 꺼냄")
+                rsp += QWORD
+            elif eff.kind == "push":
+                rsp -= QWORD
+                stack.write(step, rsp, None)  # 레지스터 값은 트레이스에 없다
+            elif eff.kind == "adjust":
+                rsp += eff.delta
+            elif eff.kind == "unknown":
                 if rsp_to is None:
-                    raise ValueError(f"{hex(pc)} '{text}': rsp를 정적으로 알 수 없어 이 항목에 rsp_to가 필요합니다")
-                new = _num(rsp_to)
-                if ins.mnemonic == "pop":
-                    mem[rsp] = new  # pop rsp: 새 rsp 값을 스택에서 꺼낸다
-                rsp, rsp_to = new, None
-            else:
-                if ins.mnemonic.startswith("pop"):
-                    mem[rsp] = _num(pops.pop(0)) if pops else 0
-                elif ins.mnemonic.startswith("push"):
-                    mem[rsp - QWORD] = 0  # 레지스터 값은 트레이스에 없다
-                rsp += delta
+                    raise ValueError(f"{where}: rsp를 정적으로 알 수 없어 이 항목에 rsp_to가 필요합니다")
+                if ins.mnemonic == "pop":  # pop rsp: 새 rsp 값을 스택에서 꺼낸다
+                    stack.read(step, rsp, rsp_to, f"{where}가 새 rsp를 꺼냄")
+                rsp, rsp_to = rsp_to, None
             pc += ins.size
-        raise ValueError(f"{hex(start)}부터 명령 {WALK_LIMIT}개 안에 간접 분기가 없습니다")
+        else:
+            raise ValueError(f"{hex(start)}부터 명령 {WALK_LIMIT}개 안에 간접 분기가 없습니다")
+        if pops:
+            raise ValueError(f"{hex(start)}: pops 값 {len(pops)}개가 남았습니다(이 항목의 pop보다 많음)")
+        if rsp_to is not None:
+            raise ValueError(f"{hex(start)}: rsp_to를 쓸 명령(pop rsp·leave 등)이 이 항목에 없습니다")
+        if "sys" in entry and not used_sys:
+            raise ValueError(f"{hex(start)}: sys를 적었지만 이 항목에 syscall이 없습니다")
+        return rsp, texts
 
     def spec_trace(self, check_id: str, spec: dict) -> Trace:
         """추가 사례의 합성 스펙(cases/extra/README.md) → 트레이스.
 
         동결 사례와 같이 vuln 끝(nop; leave; ret)에서 시작해 체인 항목을 차례로 실행한다.
-        체인 스택은 실행 전에 모두 깔아 두고(공격 페이로드), 스냅샷은 그 스택을 읽는다.
+        체인 스택(공격 페이로드)은 처음부터 깔려 있고, 실행 중에 쓴 값은 그 뒤 스텝의 스냅샷에만 보인다.
+        만들 수 없는 스펙(같은 칸에 두 값이 필요, call* 복귀 주소로 돌아가지 않음 등)은 ValueError.
         """
         ending = spec.get("ending", "execve")
         qwords = spec.get("stack_qwords", STACK_QWORDS)
@@ -473,6 +622,7 @@ class Builder:
         used, prev = {self.syscall_site // PAGE, vuln_page}, vuln_page
         starts: list[int] = []
         hows: list[str] = []
+        modes: list[str] = []
         for e in spec["chain"]:
             mode = e.get("page", "new")
             if "pick" in e:
@@ -480,23 +630,33 @@ class Builder:
             elif "nongadget" in e:
                 start, how = self._nongadget(e["nongadget"], mode, used, prev), "nongadget"
             else:
-                start, how = self._addr(e["addr"]), "addr"
+                start, how, mode = self._addr(e["addr"]), "addr", "addr"
             used.add(start // PAGE)
             prev = start // PAGE
             starts.append(start)
             hows.append(how)
+            modes.append(mode)
         landing = self.syscall_site if ending == "execve" else self.syscall_site + 2  # cmp; ja … (gadget 아님)
 
-        mem: dict[int, int] = {a: FILL for a in range(FRAME - 0x48, FRAME, QWORD)}  # buf 64 + saved rbp
+        stack = _SpecStack()
+        for a in range(FRAME - 0x48, FRAME, QWORD):  # buf 64 + saved rbp
+            stack.need(a, FILL, "vuln 버퍼")
         nop, leave, ret = self.vuln_tail
         plan = [_Planned(nop, FRAME - 0x58), _Planned(leave, FRAME - 0x58), _Planned(ret, FRAME)]
-        mem[FRAME] = starts[0]
+        stack.read(2, FRAME, starts[0], "vuln의 ret이 첫 항목 주소를 꺼냄")
         rsp = FRAME + QWORD
         db = self._db()
         entries = []
         for i, (e, start) in enumerate(zip(spec["chain"], starts)):
+            if modes[i] == "new":  # 앞 항목이 지나간 페이지(직접 jmp·페이지를 넘는 조각)면 체크포인트가 생기지 않는다
+                seen = {st.pc // PAGE for st in plan}
+                if start // PAGE in seen:
+                    raise ValueError(
+                        f"chain[{i}] {hex(start)}: page new로 골랐지만 그 페이지는 앞 항목이 이미 실행했습니다"
+                        "(index를 바꾸거나 page any로 적으세요)"
+                    )
             nxt = starts[i + 1] if i + 1 < len(starts) else landing
-            rsp, texts = self._execute(e, start, nxt, rsp, mem, plan)
+            rsp, texts = self._execute(e, start, nxt, rsp, stack, plan)
             entries.append({"addr": hx(start), "how": hows[i], "gadget": db.at(start) is not None, "asm": "; ".join(texts)})
         if ending == "execve":
             plan.append(_Planned(landing, rsp, 59))
@@ -507,10 +667,16 @@ class Builder:
         else:  # none: 마지막 항목의 분기까지만 기록(착지 스텝 없음 → 체크포인트도 없음)
             end = {"end": "max_steps"}
 
-        m = _Machine(mem, rsp=FRAME - 0x58, qwords=qwords)
-        for st in plan:
-            m.rsp = st.rsp
-            m.emit(st.pc, sys=st.sys)
+        steps: list[Step] = []
+        prev_page = None
+        for k, st in enumerate(plan):  # 스냅샷 규칙은 수집기·_Machine과 같다(페이지가 바뀐 스텝·syscall 스텝)
+            page = st.pc // PAGE
+            if page != prev_page or st.sys is not None:
+                stk = tuple(stack.value(k, st.rsp + QWORD * i) for i in range(qwords))
+                steps.append(Step(pc=st.pc, sp=st.rsp, stk=stk, sys=st.sys))
+            else:
+                steps.append(Step(pc=st.pc))
+            prev_page = page
         header = {
             "fmt": TRACE_FMT,
             "v": TRACE_V,
@@ -523,7 +689,7 @@ class Builder:
             "entries": entries,
             "note": EXTRA_NOTE,
         }
-        return Trace(header=header, steps=m.steps, end=end)
+        return Trace(header=header, steps=steps, end=end)
 
 
 def _build_frozen() -> int:
@@ -538,16 +704,21 @@ def _build_frozen() -> int:
     return 0
 
 
-def _build_extra(cases_path: str, only: set[str] | None, force: bool) -> int:
-    from .extra import load_cases, trace_of
+def _build_extra(cases_path: Path, only: set[str] | None, force: bool) -> int:
+    from .extra import load_cases, trace_header, trace_of
 
     try:
         cases = load_cases(cases_path, ROOT)
     except ValueError as e:
         print(f"사례 파일 오류: {e}", file=sys.stderr)
         return 2
+    if only:
+        unknown = only - {c["id"] for c in cases}
+        if unknown:
+            print(f"없는 사례 번호: {sorted(unknown)}", file=sys.stderr)
+            return 2
     b = Builder()
-    made = skipped = 0
+    made = skipped = stale = 0
     for case in cases:
         if only and case["id"] not in only:
             continue
@@ -557,8 +728,13 @@ def _build_extra(cases_path: str, only: set[str] | None, force: bool) -> int:
             path = ROOT / trace_of(chk)
             rel = path.relative_to(ROOT).as_posix()
             if path.exists() and not force:
-                print(f"{rel}: 이미 있음(같은 입력을 유지하려고 덮어쓰지 않음, 다시 만들려면 --force)")
-                skipped += 1
+                if trace_header(path).get("spec") != chk["synth"]:
+                    print(f"{rel}: ⚠️ 스펙이 바뀌었는데 트레이스는 예전 것입니다 — "
+                          f"스펙을 되돌리거나 --only {case['id']} --force로 다시 만드세요", file=sys.stderr)
+                    stale += 1
+                else:
+                    print(f"{rel}: 이미 있음(같은 입력을 유지하려고 덮어쓰지 않음, 다시 만들려면 --only {case['id']} --force)")
+                    skipped += 1
                 continue
             try:
                 tr = b.spec_trace(chk["id"], chk["synth"])
@@ -573,8 +749,8 @@ def _build_extra(cases_path: str, only: set[str] | None, force: bool) -> int:
             gadgets = sum(1 for e in tr.header["entries"] if e["gadget"])
             print(f"{rel}: 스텝 {len(tr.steps)}, 체인 항목 {len(tr.header['entries'])}개(그중 gadget {gadgets}개), 끝 {tr.end}")
             made += 1
-    print(f"만듦 {made} · 건너뜀 {skipped}")
-    return 0
+    print(f"만듦 {made} · 건너뜀 {skipped} · 스펙과 다른 옛 트레이스 {stale}")
+    return 1 if stale else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -585,14 +761,18 @@ def main(argv: list[str] | None = None) -> int:
             pass
     ap = argparse.ArgumentParser(description="합성 트레이스를 만든다(기본: 동결 사례 4개).")
     ap.add_argument("--extra", action="store_true", help="13주차 추가 사례의 synth 스펙으로 traces/extra/를 만든다")
-    ap.add_argument("--cases", default="cases/extra", help="--extra의 사례 파일·폴더 (기본 cases/extra)")
+    ap.add_argument("--cases", default="cases/extra", help="--extra의 사례 파일·폴더, 현재 폴더 기준 (기본 cases/extra)")
     ap.add_argument("--only", help="--extra에서 만들 사례 번호, 쉼표로 구분 (예: E7,E10)")
-    ap.add_argument("--force", action="store_true", help="--extra에서 이미 있는 트레이스도 다시 만든다")
+    ap.add_argument("--force", action="store_true", help="--extra --only의 사례는 이미 있는 트레이스도 다시 만든다")
     args = ap.parse_args(argv)
     if not args.extra:
+        if args.only or args.force:
+            ap.error("--only·--force는 --extra와 함께 씁니다")
         return _build_frozen()
+    if args.force and not args.only:
+        ap.error("--force는 --only와 함께 씁니다(다른 사람의 트레이스까지 다시 만들지 않게)")
     only = {s.strip() for s in args.only.split(",") if s.strip()} if args.only else None
-    return _build_extra(args.cases, only, args.force)
+    return _build_extra(Path(args.cases).resolve(), only, args.force)
 
 
 if __name__ == "__main__":
