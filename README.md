@@ -32,7 +32,7 @@
 git clone https://github.com/syujin2323/ropecker-trace.git
 cd ropecker-trace
 uv sync          # Python 3.11 + capstone, pyelftools, pytest (uv.lock 그대로)
-uv run pytest    # 63 passed, 2 skipped (실제로 수집하지 않은 경계 트레이스 2개는 skip)
+uv run pytest    # 103 passed, 2 skipped (실제로 수집하지 않은 경계 트레이스 2개는 skip)
 ```
 
 - Windows PowerShell에서 한글이 깨지면 먼저 `$env:PYTHONUTF8 = "1"`을 실행합니다(CI도 같은 설정).
@@ -98,6 +98,15 @@ uv run python scripts/run_cases.py
 - 실제 위반 트레이스는 수집기가 execve 스텝을 기록한 직후 대상을 끝낸 기록이라 셸이 실제로 뜨지는 않았습니다(`traces/real/f2-violation.stdout.txt`의 `Terminated via GDBstub`).
 - 실제 위반의 연쇄 18은 페이로드 gadget 17개에, `read`가 복귀한 `vuln` 끝 `nop; leave; ret`(0x4012a5)이 gadget 시작 주소라 과거 연쇄에 하나 더 들어간 값입니다.
 
+## 추가 검증 사례 (13주차)
+
+고정 사례 3종은 그대로 두고, 정상·위반·경계 입력을 `cases/extra/`에 사례 하나 = 파일 하나로 더해 반례를 찾습니다. 기대 결과는 실행 전에 적고, 기대와 다른 결과는 반례 목록(C1…)으로 모아 구현 버그·명세상 미지원·원논문 한계로 분류합니다. 형식과 작성 순서는 [cases/extra/README.md](cases/extra/README.md), 계획과 담당은 이슈 #13에 있습니다.
+
+```bash
+uv run python -m ropecker.synth --extra                  # 합성 스펙 → traces/extra/ (이미 있는 트레이스는 건너뜀)
+uv run python scripts/run_cases.py --cases cases/extra   # → results/w13/compare.md(사례 표 + 반례 목록), results/w13/runs/
+```
+
 ## 원논문과의 차이
 
 - 커널 모듈·page fault·CPU의 LBR 대신 기록된 실행 트레이스를 사용자 공간에서 분석합니다. LBR은 트레이스의 최근 간접 분기 16개로 흉내 냅니다(§II-B).
@@ -120,23 +129,25 @@ uv run python scripts/run_cases.py
 | `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ✅ LRU 윈도·위험 syscall 체크포인트·ret 미래 연쇄 · ⬜ jmp gadget 에뮬레이션 | W12 (W13) |
 | `detector.py` 통합 판정 | past·infra | ✅ (모든 레인 연결, 결과 `stubs` 빈 목록) | W12 |
 | `scripts/run_cases.py` 보호 적용 전·후 비교표, CLI 판정 로그(`--verbose`) | infra | ✅ 적용 전·후 비교표(적용 후 판정 일치 6 · 미구현 0)·판정 로그 | W12 |
-| `experiments/sweep_t.py` T=5~17 실험 | any | ⬜ | W14 |
+| `cases/extra`·`extra.py` 추가 사례 형식·검사, `synth.py --extra` 합성 스펙, `run_cases.py --cases` 실행·반례 목록 | infra | ✅ | W13 (11/24) |
+| 추가 사례 E1~E12 실행·반례 분류 | all | ⏳ 이슈 #13 | W13 (11/30) |
+| `experiments/` 14주차 실험(주 T=5~17, 보조 W) | any | ✅ 계획 초안(`experiments/README.md`, 11/29 확정) · ⬜ `sweep.py` | W14 |
 
-레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 미구현이면 xfail로 표시되고, 구현이 들어오면 저절로 pass/fail로 바뀝니다. W12 기준 모든 레인이 구현되어 xfail은 없습니다(`uv run pytest`: 63 passed, 2 skipped — 실제 수집하지 않은 경계 트레이스 2개).
+레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 미구현이면 xfail로 표시되고, 구현이 들어오면 저절로 pass/fail로 바뀝니다. 모든 레인이 구현되어 xfail은 없습니다(11/24 기준 `uv run pytest`: 103 passed, 2 skipped — 실제 수집하지 않은 경계 트레이스 2개, 13주차 E1에서 수집 예정). 추가 사례 형식 검사는 `tests/test_extra.py`가 합니다.
 
 ## 저장소 구조
 
 ```
 ropecker/        분석기(순수 Python) — model.py가 레인 사이의 계약, cases.py가 동결 사례 판정 기준
 tests/           pytest — test_frozen.py가 11주차 동결 사례 실행
-cases/           frozen.json(11주차 동결 3사례, 해시로 잠금), extra/(13주차 추가·반례)
-traces/          synth/(합성, 정답 포함) real/(실제 수집)
+cases/           frozen.json(11주차 동결 3사례, 해시로 잠금), extra/(13주차 추가 사례, 형식은 extra/README.md)
+traces/          synth/(합성, 정답 포함) real/(실제 수집) extra/(13주차 추가 사례 합성)
 data/gadgets/    모듈별 gadget DB
 target/          대상 바이너리 소스·빌드 스크립트·바이너리·sysroot
 collect/         x86 실행·트레이스 수집(Docker)
-experiments/     T 변화 실험
-scripts/         run_cases.py(보호 적용 전·후 비교표)
-results/         w12/compare.md(비교표), w12/runs/(콘솔 로그·결과 JSON)
+experiments/     14주차 실험 계획·결과(T·W)
+scripts/         run_cases.py(보호 적용 전·후 비교표, --cases로 13주차 추가 사례)
+results/         w12/(동결 사례 비교표·로그), w13/(추가 사례 표·반례 목록·로그)
 docs/            design.md(정의·형식), weekly/(주간보고서 원고), ai-log.md, final_report.md
 ```
 
