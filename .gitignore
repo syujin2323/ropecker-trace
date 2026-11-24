@@ -17,3 +17,5 @@ Thumbs.db
 # 실험 중간 산출물(결과 CSV·표는 커밋하고, 임시 파일만 무시)
 experiments/results/*.tmp
 *.log.tmp
+# 형식 예시·시험 실행 결과(--out results/<이름>.tmp)
+results/*.tmp/

@@ -1,0 +1,143 @@
+{
+  "id": "E90",
+  "제목": "형식 예시 1 — pick으로 만든 ret 체인(경계 11·10)",
+  "담당": "송유진",
+  "작성일": "2026-11-24",
+  "방향": "경계값",
+  "구분": "경계",
+  "입력": "libc의 ret gadget을 서로 다른 코드 페이지에서 11개, 10개 골라 이은 합성 체인(끝은 gadget이 아닌 지점)",
+  "기대 결과": "11개는 ROP(연쇄 11, 첫 gadget 진입 스텝 3에서 탐지), 10개는 정상(연쇄 10). 고정 사례 F3과 같은 경계",
+  "근거": "판정 기준 연쇄 ≥ T(T=11), docs/design.md 2절",
+  "checks": [
+    {
+      "id": "ex-ret-11",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "stop"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len": 11,
+        "detect_step_max": 3
+      }
+    },
+    {
+      "id": "ex-ret-10",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "stop"
+      },
+      "expect": {
+        "verdict": "정상",
+        "chain_len": 10
+      }
+    }
+  ]
+}
