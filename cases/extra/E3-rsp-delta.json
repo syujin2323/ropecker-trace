@@ -1,0 +1,69 @@
+{
+  "담당": "김종훈",
+  "작성일": "2026-11-27",
+  "방향": "표기 변형",
+  "id": "E3",
+  "구분": "정상",
+  "제목": "gadget DB의 rsp 변화(sd·adv) 계산 — popcnt·16비트 push/pop·enter·iret",
+  "입력": "rsp를 건드리는 명령 뒤에 ret이 붙은 바이트열(popcnt, push ax·pop ax·pushfw·popfw·push imm16·push fs, enter n,0과 n,1, pop sp, iretq·sysretq, 16비트 ret)을 DB 생성기에 넣어 sd·adv를 본다. 정상 코드의 명령 해석이므로 구분은 '정상'",
+  "기대 결과": "popcnt는 rsp 불변(sd 0·adv 8), 16비트 push/pop은 ±2바이트, 64비트 push fs는 8바이트, enter n,0은 8+n바이트 내림, 그 밖의 중첩 enter·pop sp·iretq·sysretq·16비트 ret은 정적으로 모르므로 None(논문 Table II need emulation)",
+  "근거": "논문 VI-A Table II, docs/design.md 'sd·adv'. PR #8 리뷰 지적. 이슈 #13 7번",
+  "checks": [
+    {
+      "id": "e3-popcnt",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_popcnt_is_not_pop",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-16bit",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-64bit-same",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_64bit_push_pop_unchanged",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-enter",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_enter_level0_moves_rsp_by_8_plus_size",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-enter-nested",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_enter_nested_is_unknown",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-pop-sp",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_sixteen_bit_pop_sp_is_pivot",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-iret",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_iret_sysret_are_unknown",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e3-ret16",
+      "pytest": "cases/extra/unit/test_e3_rsp_delta.py::test_16bit_ret_is_unknown",
+      "expect": {
+        "pass": true
+      }
+    }
+  ]
+}
