@@ -1,0 +1,7 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_64bit_push_pop_unchanged -q -rA --runxfail
+.                                                                        [100%]
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED cases/extra/unit/test_e3_rsp_delta.py::test_64bit_push_pop_unchanged
+1 passed in 0.54s
+[종료 코드 0]

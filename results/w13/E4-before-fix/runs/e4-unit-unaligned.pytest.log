@@ -1,0 +1,7 @@
+$ python -m pytest cases/extra/unit/test_e4_unaligned.py::test_unaligned_gadget_is_in_db -q -rA --runxfail
+.                                                                        [100%]
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED cases/extra/unit/test_e4_unaligned.py::test_unaligned_gadget_is_in_db
+1 passed in 0.46s
+[종료 코드 0]

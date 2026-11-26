@@ -1,0 +1,18 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_sixteen_bit_pop_sp_is_pivot -q -rA --runxfail
+F                                                                        [100%]
+================================== FAILURES ===================================
+______________________ test_sixteen_bit_pop_sp_is_pivot _______________________
+
+    def test_sixteen_bit_pop_sp_is_pivot():
+>       assert first("665cc3") == (None, None)  # pop sp: 스택 피벗
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert (8, 16) == (None, None)
+E         
+E         At index 0 diff: 8 != None
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:45: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_sixteen_bit_pop_sp_is_pivot
+1 failed in 0.63s
+[종료 코드 1]

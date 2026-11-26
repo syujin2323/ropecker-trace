@@ -1,0 +1,20 @@
+$ python -m ropecker --trace traces/extra/e4-unaligned-chain.jsonl.gz --window 8192 --threshold 11 --cmp ge --verbose --json results/w13/E4-before-fix/runs/e4-unaligned-chain.after.json
+판정: ROP (연쇄 길이 12 = 과거 1 + 미래 11, 기준 연쇄 ≥ 11)
+체크포인트: 스텝 3, pc 0x7ffff7da9659, 이유 window
+  gadget 0x7ffff7da9659 (libc.so.6+0x29659, past)
+  gadget 0x7ffff7daa179 (libc.so.6+0x2a179, future)
+  gadget 0x7ffff7dab252 (libc.so.6+0x2b252, future)
+  gadget 0x7ffff7dac072 (libc.so.6+0x2c072, future)
+  gadget 0x7ffff7dad1bd (libc.so.6+0x2d1bd, future)
+  gadget 0x7ffff7dae775 (libc.so.6+0x2e775, future)
+  gadget 0x7ffff7daf3d1 (libc.so.6+0x2f3d1, future)
+  gadget 0x7ffff7db0157 (libc.so.6+0x30157, future)
+  gadget 0x7ffff7db20c1 (libc.so.6+0x320c1, future)
+  gadget 0x7ffff7db3059 (libc.so.6+0x33059, future)
+  gadget 0x7ffff7db46d1 (libc.so.6+0x346d1, future)
+  gadget 0x7ffff7db5001 (libc.so.6+0x35001, future)
+판정 로그 (체크포인트 2개)
+  스텝       0  pc 0x4012a5  window      과거 0 + 미래 0 = 0  -
+  스텝       3  pc 0x7ffff7da9659  window      과거 1 + 미래 11 = 12  ROP
+실행 스텝 16, 트레이스 종료 syscall:59
+[종료 코드 1]

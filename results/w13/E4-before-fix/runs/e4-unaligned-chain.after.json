@@ -1,0 +1,124 @@
+{
+  "fmt": "ropecker-result",
+  "v": 1,
+  "verdict": "ROP",
+  "chain_len": 12,
+  "past_len": 1,
+  "future_len": 11,
+  "gadgets": [
+    {
+      "addr": "0x7ffff7da9659",
+      "module": "libc.so.6",
+      "off": "0x29659",
+      "from": "past"
+    },
+    {
+      "addr": "0x7ffff7daa179",
+      "module": "libc.so.6",
+      "off": "0x2a179",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dab252",
+      "module": "libc.so.6",
+      "off": "0x2b252",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dac072",
+      "module": "libc.so.6",
+      "off": "0x2c072",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dad1bd",
+      "module": "libc.so.6",
+      "off": "0x2d1bd",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7dae775",
+      "module": "libc.so.6",
+      "off": "0x2e775",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7daf3d1",
+      "module": "libc.so.6",
+      "off": "0x2f3d1",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7db0157",
+      "module": "libc.so.6",
+      "off": "0x30157",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7db20c1",
+      "module": "libc.so.6",
+      "off": "0x320c1",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7db3059",
+      "module": "libc.so.6",
+      "off": "0x33059",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7db46d1",
+      "module": "libc.so.6",
+      "off": "0x346d1",
+      "from": "future"
+    },
+    {
+      "addr": "0x7ffff7db5001",
+      "module": "libc.so.6",
+      "off": "0x35001",
+      "from": "future"
+    }
+  ],
+  "checkpoint": {
+    "step": 3,
+    "pc": "0x7ffff7da9659",
+    "reason": "window"
+  },
+  "checks": [
+    {
+      "step": 0,
+      "pc": "0x4012a5",
+      "reason": "window",
+      "past": 0,
+      "future": 0,
+      "total": 0
+    },
+    {
+      "step": 3,
+      "pc": "0x7ffff7da9659",
+      "reason": "window",
+      "past": 1,
+      "future": 11,
+      "total": 12
+    }
+  ],
+  "n_checkpoints": 2,
+  "steps": 16,
+  "trace_end": "syscall:59",
+  "collector": "synth",
+  "params": {
+    "window": 8192,
+    "threshold": 11,
+    "cmp": "ge",
+    "lbr_depth": 16,
+    "align_check": false,
+    "check": true,
+    "risky_syscalls": [
+      9,
+      10,
+      25,
+      59
+    ]
+  },
+  "stubs": []
+}
