@@ -1,0 +1,440 @@
+{
+  "id": "E7",
+  "제목": "gadget 10개마다 긴 조각(명령 7개 이상)을 끼운 체인",
+  "담당": "심형섭",
+  "작성일": "2026-11-26",
+  "방향": "알려진 한계",
+  "구분": "위반",
+  "입력": "libc ret gadget 사이에 gadget이 아닌 긴 조각(명령 7개 이상, 끝은 ret)을 끼워 execve에 닿는 체인 세 가지. (가) gadget 10개 + 긴 조각 + 10개 + 긴 조각 + 10개(gadget 30개). (나) gadget 11개 + 긴 조각 + 11개(끼우는 자리가 한 칸 늦음). (다) 긴 조각 자리에 명령 6개짜리 gadget(pop 5개 + ret, gadget 길이 상한)을 넣은 gadget 10개 + 6개짜리 + 10개",
+  "기대 결과": "셋 다 탐지(ROP)하고 execve 전에 멈춘다. (가) 공격 입력이므로 탐지(연쇄 11 이상). (나) 첫 조각이 이미 11개라 첫 gadget 진입(스텝 3)에서 과거 1 + 미래 10 = 연쇄 11로 ROP. (다) 명령 6개짜리는 정의상 gadget이라 연쇄가 끊기지 않아 스텝 3에서 과거 1 + 미래 20 = 연쇄 21로 ROP",
+  "근거": "gadget은 명령 6개 이하(논문 Ⅶ-B, design.md 1절)라서 7개 이상인 조각의 주소는 gadget DB에 없고 과거·미래 연쇄가 거기서 끊긴다. 논문 Ⅶ-B는 (가)와 같은 공격(gadget 10개마다 긴 gadget)을 한 번의 윈도 전환만 세는 ROPecker가 드러내지 못한다고 적고, 연속 3개 윈도의 연쇄 길이를 더하는 확장안을 제안한다. 공격 입력의 기대는 '탐지'로 적고(cases/extra/README.md), 놓치면 반례로 기록해 분류한다",
+  "checks": [
+    {
+      "id": "e7-long-every-10",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "nongadget": {
+              "n_min": 7
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "nongadget": {
+              "n_min": 7
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 11,
+        "gadgets_nonempty": true
+      }
+    },
+    {
+      "id": "e7-long-after-11",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "nongadget": {
+              "n_min": 7
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len": 11,
+        "past_len": 1,
+        "future_len": 10,
+        "detect_step_max": 3
+      }
+    },
+    {
+      "id": "e7-six-insn-gadget",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^pop r\\w+; pop r\\w+; pop r\\w+; pop r\\w+; pop r\\w+; ret$",
+              "n": 6,
+              "kind": "ret",
+              "aligned": true,
+              "sd_known": true
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len": 21,
+        "past_len": 1,
+        "future_len": 20,
+        "detect_step_max": 3
+      }
+    }
+  ]
+}
