@@ -1,0 +1,101 @@
+{
+  "담당": "김종훈",
+  "작성일": "2026-11-27",
+  "방향": "표기 변형",
+  "id": "E2",
+  "제목": "loop 계열(loop·loope·loopne)을 품은 조각이 gadget DB에 들어가는지",
+  "구분": "위반",
+  "입력": "(1) loop·loope·loopne·jrcxz 뒤에 ret이 붙은 바이트열을 DB 생성기(scan)에 넣고, 저장소 DB에 loop 계열 gadget이 있는지 센다. (2) libc의 `loopne X; ret` 조각 하나를 가운데(6번째)에 끼운 ret gadget 12개 연쇄 + execve를 합성 트레이스로 만들어 실행한다",
+  "기대 결과": "(1) loop 계열을 품은 조각은 gadget이 아니다(조건 분기, design.md 직접 분기 없음 규칙). jrcxz와 같은 군. 저장소 DB에도 없다. (2) 공격 입력이므로 탐지(ROP)를 기대한다",
+  "근거": "논문 V-A·VI-A: gadget은 직접 분기 없이 간접 분기로 끝나는 조각. docs/design.md gadget DB v1. 이슈 #13 6번",
+  "checks": [
+    {
+      "id": "e2-unit-loop",
+      "pytest": "cases/extra/unit/test_e2_loop_filter.py::test_loop_family_is_not_inside_gadget",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e2-unit-db",
+      "pytest": "cases/extra/unit/test_e2_loop_filter.py::test_shipped_db_has_no_loop_gadget",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e2-loop-chain",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^loopne? 0x[0-9a-f]+; ret$",
+              "sd_known": true
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 11,
+        "gadgets_nonempty": true
+      }
+    }
+  ]
+}

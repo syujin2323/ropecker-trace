@@ -1,0 +1,199 @@
+{
+  "담당": "김종훈",
+  "작성일": "2026-11-27",
+  "방향": "표기 변형",
+  "id": "E4",
+  "구분": "위반",
+  "제목": "비정렬 gadget(명령 경계가 아닌 주소에서 시작)을 쓰는 연쇄와 ROPgadget 교차검증",
+  "입력": "(1) libc의 비정렬 ret gadget 12개를 이은 합성 연쇄 + execve를, 기본 설정과 --align-check로 각각 실행한다. (2) 정렬 안 된 gadget을 일부러 만든 바이트열이 DB에 aligned=false로 들어가는지, (3) rop_vault 전체를 ROPgadget(--all)과 대조해 한쪽에만 있는 gadget이 있는지 본다",
+  "기대 결과": "(1) 둘 다 탐지(ROP). 기본 설정은 연쇄 길이 11 이상으로, --align-check는 비정렬 gadget을 만나는 즉시. (2) aligned=false로 기록. (3) 양쪽 주소 집합이 같다(ROPgadget의 직접 분기·6개 초과 조각은 대조에서 제외)",
+  "근거": "논문 VI-A(모든 바이트 오프셋 탐색, 정렬 정보는 선택), V-C. 이슈 #13 7번",
+  "checks": [
+    {
+      "id": "e4-unaligned-chain",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 11,
+        "gadgets_nonempty": true
+      }
+    },
+    {
+      "id": "e4-align-check",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "aligned": false
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "args": [
+        "--align-check"
+      ],
+      "expect": {
+        "verdict": "ROP",
+        "gadgets_nonempty": true
+      }
+    },
+    {
+      "id": "e4-unit-unaligned",
+      "pytest": "cases/extra/unit/test_e4_unaligned.py::test_unaligned_gadget_is_in_db",
+      "expect": {
+        "pass": true
+      }
+    },
+    {
+      "id": "e4-ropgadget",
+      "pytest": "cases/extra/unit/test_e4_unaligned.py::test_rop_vault_matches_ropgadget",
+      "expect": {
+        "pass": true
+      }
+    }
+  ]
+}
