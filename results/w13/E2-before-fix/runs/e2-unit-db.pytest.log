@@ -1,0 +1,26 @@
+$ python -m pytest cases/extra/unit/test_e2_loop_filter.py::test_shipped_db_has_no_loop_gadget -q -rA --runxfail
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____________________ test_shipped_db_has_no_loop_gadget ______________________
+
+    def test_shipped_db_has_no_loop_gadget():
+        """저장소의 libc·rop_vault DB에 loop 계열을 품은 gadget이 없어야 한다(DB를 다시 만든 뒤 통과)."""
+        import gzip
+        import json
+        import re
+    
+        from ropecker.synth import ROOT
+    
+        for name in ("libc.so.6", "rop_vault"):
+            with gzip.open(ROOT / "data" / "gadgets" / f"{name}.gdb.jsonl.gz", "rt", encoding="utf-8") as f:
+                f.readline()
+                bad = [r["asm"] for r in map(json.loads, f) if re.search(r"(^|; )loop(e|ne)?\b", r["asm"])]
+>           assert not bad, f"{name}: loop 계열 gadget {len(bad)}개 (예: {bad[0]})"
+E           AssertionError: libc.so.6: loop 계열 gadget 944개 (예: loopne 0x29f54; add bl, al; nop dword ptr [rax]; endbr64; lea rax, [rip + 0x1aff3c]; ret)
+E           assert not ['loopne 0x29f54; add bl, al; nop dword ptr [rax]; endbr64; lea rax, [rip + 0x1aff3c]; ret', 'add byte ptr [rsi], dl; ...', 'add bl, ch; loopne 0x2a2f9; ret 0x10', 'loopne 0x2a2f9; ret 0x10', 'loope 0x2ca5e; jmp qword ptr [rsi + 0xf]', ...]
+
+cases\extra\unit\test_e2_loop_filter.py:36: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e2_loop_filter.py::test_shipped_db_has_no_loop_gadget
+1 failed in 1.95s
+[종료 코드 1]

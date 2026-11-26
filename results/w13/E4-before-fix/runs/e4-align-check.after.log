@@ -1,0 +1,9 @@
+$ python -m ropecker --trace traces/extra/e4-align-check.jsonl.gz --window 8192 --threshold 11 --cmp ge --verbose --align-check --json results/w13/E4-before-fix/runs/e4-align-check.after.json
+판정: ROP (연쇄 길이 1 = 과거 1 + 미래 0, 기준 연쇄 ≥ 11)
+체크포인트: 스텝 3, pc 0x7ffff7da9659, 이유 window
+  gadget 0x7ffff7da9659 (libc.so.6+0x29659, past)
+판정 로그 (체크포인트 2개)
+  스텝       0  pc 0x4012a5  window      과거 0 + 미래 0 = 0  -
+  스텝       3  pc 0x7ffff7da9659  window      과거 1 + 미래 0 = 1  -
+실행 스텝 16, 트레이스 종료 syscall:59
+[종료 코드 1]

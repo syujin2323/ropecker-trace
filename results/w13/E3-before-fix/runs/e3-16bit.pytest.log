@@ -1,0 +1,108 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes -q -rA --runxfail
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+__________________ test_16bit_push_pop_is_2_bytes[6650c3--2] __________________
+
+hexcode = '6650c3', sd = -2
+
+    @pytest.mark.parametrize(
+        "hexcode, sd",
+        [("6650c3", -2), ("6658c3", 2), ("669cc3", -2), ("669dc3", 2), ("66680100c3", -2), ("660fa0c3", -2)],
+    )  # push ax / pop ax / pushfw / popfw / push imm16 / push fs (66 접두사 = 16비트)
+    def test_16bit_push_pop_is_2_bytes(hexcode, sd):
+>       assert first(hexcode) == (sd, sd + 8)
+E       assert (-8, 0) == (-2, 6)
+E         
+E         At index 0 diff: -8 != -2
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:26: AssertionError
+__________________ test_16bit_push_pop_is_2_bytes[6658c3-2] ___________________
+
+hexcode = '6658c3', sd = 2
+
+    @pytest.mark.parametrize(
+        "hexcode, sd",
+        [("6650c3", -2), ("6658c3", 2), ("669cc3", -2), ("669dc3", 2), ("66680100c3", -2), ("660fa0c3", -2)],
+    )  # push ax / pop ax / pushfw / popfw / push imm16 / push fs (66 접두사 = 16비트)
+    def test_16bit_push_pop_is_2_bytes(hexcode, sd):
+>       assert first(hexcode) == (sd, sd + 8)
+E       assert (8, 16) == (2, 10)
+E         
+E         At index 0 diff: 8 != 2
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:26: AssertionError
+__________________ test_16bit_push_pop_is_2_bytes[669cc3--2] __________________
+
+hexcode = '669cc3', sd = -2
+
+    @pytest.mark.parametrize(
+        "hexcode, sd",
+        [("6650c3", -2), ("6658c3", 2), ("669cc3", -2), ("669dc3", 2), ("66680100c3", -2), ("660fa0c3", -2)],
+    )  # push ax / pop ax / pushfw / popfw / push imm16 / push fs (66 접두사 = 16비트)
+    def test_16bit_push_pop_is_2_bytes(hexcode, sd):
+>       assert first(hexcode) == (sd, sd + 8)
+E       assert (-8, 0) == (-2, 6)
+E         
+E         At index 0 diff: -8 != -2
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:26: AssertionError
+__________________ test_16bit_push_pop_is_2_bytes[669dc3-2] ___________________
+
+hexcode = '669dc3', sd = 2
+
+    @pytest.mark.parametrize(
+        "hexcode, sd",
+        [("6650c3", -2), ("6658c3", 2), ("669cc3", -2), ("669dc3", 2), ("66680100c3", -2), ("660fa0c3", -2)],
+    )  # push ax / pop ax / pushfw / popfw / push imm16 / push fs (66 접두사 = 16비트)
+    def test_16bit_push_pop_is_2_bytes(hexcode, sd):
+>       assert first(hexcode) == (sd, sd + 8)
+E       assert (8, 16) == (2, 10)
+E         
+E         At index 0 diff: 8 != 2
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:26: AssertionError
+________________ test_16bit_push_pop_is_2_bytes[66680100c3--2] ________________
+
+hexcode = '66680100c3', sd = -2
+
+    @pytest.mark.parametrize(
+        "hexcode, sd",
+        [("6650c3", -2), ("6658c3", 2), ("669cc3", -2), ("669dc3", 2), ("66680100c3", -2), ("660fa0c3", -2)],
+    )  # push ax / pop ax / pushfw / popfw / push imm16 / push fs (66 접두사 = 16비트)
+    def test_16bit_push_pop_is_2_bytes(hexcode, sd):
+>       assert first(hexcode) == (sd, sd + 8)
+E       assert (-8, 0) == (-2, 6)
+E         
+E         At index 0 diff: -8 != -2
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:26: AssertionError
+_________________ test_16bit_push_pop_is_2_bytes[660fa0c3--2] _________________
+
+hexcode = '660fa0c3', sd = -2
+
+    @pytest.mark.parametrize(
+        "hexcode, sd",
+        [("6650c3", -2), ("6658c3", 2), ("669cc3", -2), ("669dc3", 2), ("66680100c3", -2), ("660fa0c3", -2)],
+    )  # push ax / pop ax / pushfw / popfw / push imm16 / push fs (66 접두사 = 16비트)
+    def test_16bit_push_pop_is_2_bytes(hexcode, sd):
+>       assert first(hexcode) == (sd, sd + 8)
+E       assert (-8, 0) == (-2, 6)
+E         
+E         At index 0 diff: -8 != -2
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:26: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes[6650c3--2]
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes[6658c3-2]
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes[669cc3--2]
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes[669dc3-2]
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes[66680100c3--2]
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_push_pop_is_2_bytes[660fa0c3--2]
+6 failed in 0.79s
+[종료 코드 1]

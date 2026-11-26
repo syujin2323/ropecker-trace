@@ -1,0 +1,17 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_16bit_ret_is_unknown -q -rA --runxfail
+F                                                                        [100%]
+================================== FAILURES ===================================
+__________________________ test_16bit_ret_is_unknown __________________________
+
+    def test_16bit_ret_is_unknown():
+        g = {g.addr: g for g in scan(bytes.fromhex("66c3"), 0x1000)}[0x1000]
+>       assert g.adv is None  # 16비트 ret은 몇 바이트를 꺼내는지 CPU마다 다름
+        ^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 8 is None
+E        +  where 8 = Gadget(addr=4096, n=1, end=4096, kind='ret', sd=0, adv=8, aligned=True, asm='ret').adv
+
+cases\extra\unit\test_e3_rsp_delta.py:55: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_16bit_ret_is_unknown - Ass...
+1 failed in 0.70s
+[종료 코드 1]

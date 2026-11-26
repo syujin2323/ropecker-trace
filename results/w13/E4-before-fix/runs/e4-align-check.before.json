@@ -1,0 +1,30 @@
+{
+  "fmt": "ropecker-result",
+  "v": 1,
+  "verdict": "미검사",
+  "chain_len": null,
+  "past_len": null,
+  "future_len": null,
+  "gadgets": [],
+  "checkpoint": null,
+  "checks": [],
+  "n_checkpoints": 0,
+  "steps": 16,
+  "trace_end": "syscall:59",
+  "collector": "synth",
+  "params": {
+    "window": 8192,
+    "threshold": 11,
+    "cmp": "ge",
+    "lbr_depth": 16,
+    "align_check": true,
+    "check": false,
+    "risky_syscalls": [
+      9,
+      10,
+      25,
+      59
+    ]
+  },
+  "stubs": []
+}

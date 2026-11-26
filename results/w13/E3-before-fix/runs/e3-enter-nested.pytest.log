@@ -1,0 +1,18 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_enter_nested_is_unknown -q -rA --runxfail
+F                                                                        [100%]
+================================== FAILURES ===================================
+________________________ test_enter_nested_is_unknown _________________________
+
+    def test_enter_nested_is_unknown():
+>       assert first("c8080001c3") == (None, None)  # enter 8, 1: 중첩 수준 > 0 → 정적으로 모름
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert (0, 8) == (None, None)
+E         
+E         At index 0 diff: 0 != None
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:41: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_enter_nested_is_unknown - ...
+1 failed in 0.65s
+[종료 코드 1]

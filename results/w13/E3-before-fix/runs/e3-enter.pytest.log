@@ -1,0 +1,18 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_enter_level0_moves_rsp_by_8_plus_size -q -rA --runxfail
+F                                                                        [100%]
+================================== FAILURES ===================================
+_________________ test_enter_level0_moves_rsp_by_8_plus_size __________________
+
+    def test_enter_level0_moves_rsp_by_8_plus_size():
+>       assert first("c8080000c3") == (-16, -8)  # enter 8, 0: push rbp; sub rsp, 8
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert (0, 8) == (-16, -8)
+E         
+E         At index 0 diff: 0 != -16
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:35: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_enter_level0_moves_rsp_by_8_plus_size
+1 failed in 0.64s
+[종료 코드 1]

@@ -1,0 +1,4 @@
+$ python -m ropecker --trace traces/extra/e4-align-check.jsonl.gz --window 8192 --threshold 11 --cmp ge --no-check --align-check --json results/w13/E4-before-fix/runs/e4-align-check.before.json
+판정: 미검사 (--no-check, 보호 적용 전)
+실행 스텝 16, 트레이스 종료 syscall:59
+[종료 코드 0]

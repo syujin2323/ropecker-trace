@@ -1,0 +1,34 @@
+$ python -m pytest cases/extra/unit/test_e3_rsp_delta.py::test_iret_sysret_are_unknown -q -rA --runxfail
+FF                                                                       [100%]
+================================== FAILURES ===================================
+____________________ test_iret_sysret_are_unknown[48cfc3] _____________________
+
+hexcode = '48cfc3'
+
+    @pytest.mark.parametrize("hexcode", ["48cfc3", "480f07c3"])  # iretq / sysretq
+    def test_iret_sysret_are_unknown(hexcode):
+>       assert first(hexcode) == (None, None)
+E       assert (0, 8) == (None, None)
+E         
+E         At index 0 diff: 0 != None
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:50: AssertionError
+___________________ test_iret_sysret_are_unknown[480f07c3] ____________________
+
+hexcode = '480f07c3'
+
+    @pytest.mark.parametrize("hexcode", ["48cfc3", "480f07c3"])  # iretq / sysretq
+    def test_iret_sysret_are_unknown(hexcode):
+>       assert first(hexcode) == (None, None)
+E       assert (0, 8) == (None, None)
+E         
+E         At index 0 diff: 0 != None
+E         Use -v to get more diff
+
+cases\extra\unit\test_e3_rsp_delta.py:50: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_iret_sysret_are_unknown[48cfc3]
+FAILED cases/extra/unit/test_e3_rsp_delta.py::test_iret_sysret_are_unknown[480f07c3]
+2 failed in 0.64s
+[종료 코드 1]

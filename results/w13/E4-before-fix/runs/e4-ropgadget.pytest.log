@@ -1,0 +1,30 @@
+$ python -m pytest cases/extra/unit/test_e4_unaligned.py::test_rop_vault_matches_ropgadget -q -rA --runxfail
+F                                                                        [100%]
+================================== FAILURES ===================================
+______________________ test_rop_vault_matches_ropgadget _______________________
+
+    def test_rop_vault_matches_ropgadget():
+        """rop_vault 전체를 ROPgadget(--all)과 대조: 서로 한쪽에만 있는 gadget이 없어야 한다."""
+        out = subprocess.run(
+            [sys.executable, "-c", "import ropgadget; ropgadget.main()", "--binary", str(ROOT / ROP_VAULT), "--all", "--depth", "6"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+        ).stdout
+>       res = compare_ropgadget(build(ROOT / ROP_VAULT), out)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+cases\extra\unit\test_e4_unaligned.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+gadgets = [Gadget(addr=4198414, n=4, end=4198426, kind='ret', sd=8, adv=16, aligned=False, asm='add byte ptr [rax - 0x7b], cl; s...; add byte ptr [rax], al; add byte ptr [rax], al; add bh, bh; xor eax, 0x2fe2; bnd jmp qword ptr [rip + 0x2fe3]'), ...]
+rg_output = 'Gadgets information\n============================================================\n0x000000000040114b : add bh, bh ; ...ax ; je 0x401016 ; call rax\n0x000000000040100f : test rax, rax ; je 0x401016 ; call rax\n\nUnique gadgets found: 89\n'
+
+    def compare_ropgadget(gadgets: list[Gadget], rg_output: str) -> dict:
+        """ROPgadget 출력과 교차검증: {'only_ours': [...], 'only_rg': [...], 'both': n}."""
+>       raise NotImplementedError("gadgetdb.compare_ropgadget: db 레인(W13)")
+E       NotImplementedError: gadgetdb.compare_ropgadget: db 레인(W13)
+
+ropecker\gadgetdb.py:217: NotImplementedError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e4_unaligned.py::test_rop_vault_matches_ropgadget
+1 failed in 1.45s
+[종료 코드 1]

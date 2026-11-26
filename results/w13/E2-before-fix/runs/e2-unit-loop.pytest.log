@@ -1,0 +1,45 @@
+$ python -m pytest cases/extra/unit/test_e2_loop_filter.py::test_loop_family_is_not_inside_gadget -q -rA --runxfail
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_________________ test_loop_family_is_not_inside_gadget[loop] _________________
+
+name = 'loop'
+
+    @pytest.mark.parametrize("name", LOOPS)
+    def test_loop_family_is_not_inside_gadget(name):
+        addrs = {g.addr for g in scan(bytes.fromhex(LOOPS[name] + "c3"), 0x1000)}  # <loop>; ret
+>       assert 0x1000 not in addrs  # 조건 분기를 품은 조각은 gadget이 아님
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 4096 not in {4096, 4098}
+
+cases\extra\unit\test_e2_loop_filter.py:16: AssertionError
+________________ test_loop_family_is_not_inside_gadget[loope] _________________
+
+name = 'loope'
+
+    @pytest.mark.parametrize("name", LOOPS)
+    def test_loop_family_is_not_inside_gadget(name):
+        addrs = {g.addr for g in scan(bytes.fromhex(LOOPS[name] + "c3"), 0x1000)}  # <loop>; ret
+>       assert 0x1000 not in addrs  # 조건 분기를 품은 조각은 gadget이 아님
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 4096 not in {4096, 4098}
+
+cases\extra\unit\test_e2_loop_filter.py:16: AssertionError
+________________ test_loop_family_is_not_inside_gadget[loopne] ________________
+
+name = 'loopne'
+
+    @pytest.mark.parametrize("name", LOOPS)
+    def test_loop_family_is_not_inside_gadget(name):
+        addrs = {g.addr for g in scan(bytes.fromhex(LOOPS[name] + "c3"), 0x1000)}  # <loop>; ret
+>       assert 0x1000 not in addrs  # 조건 분기를 품은 조각은 gadget이 아님
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 4096 not in {4096, 4098}
+
+cases\extra\unit\test_e2_loop_filter.py:16: AssertionError
+=========================== short test summary info ===========================
+FAILED cases/extra/unit/test_e2_loop_filter.py::test_loop_family_is_not_inside_gadget[loop]
+FAILED cases/extra/unit/test_e2_loop_filter.py::test_loop_family_is_not_inside_gadget[loope]
+FAILED cases/extra/unit/test_e2_loop_filter.py::test_loop_family_is_not_inside_gadget[loopne]
+3 failed in 0.79s
+[종료 코드 1]
