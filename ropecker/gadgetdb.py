@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -31,15 +32,30 @@ _UNKNOWN = None  # rsp 변화를 정적으로 알 수 없음(논문 Table II "ne
 _SP_REGS = frozenset({x86.X86_REG_RSP, x86.X86_REG_ESP, x86.X86_REG_SP, x86.X86_REG_SPL})
 
 
+_PUSH = frozenset({"push", "pushf", "pushfq"})  # popcnt처럼 'pop'으로 시작하는 다른 명령과 섞이지 않게 이름 전체로 비교
+_POP = frozenset({"pop", "popf", "popfq"})
+_NO_STATIC_RSP = ("iret", "sysret", "sysexit")  # 스택에서 여러 값을 꺼내며 제어 흐름까지 바꾼다
+
+
+def _opsize16(ins) -> bool:
+    return ins.prefix[2] == 0x66  # 피연산자 크기 접두사: push/pop/ret이 2바이트를 다룬다
+
+
 def _rsp_delta(ins) -> int | None:
     """명령 하나가 rsp를 얼마나 옮기는지. rsp를 안 건드리면 0, 예측할 수 없으면 None."""
     m, ops = ins.mnemonic, ins.operands
-    if m.startswith("push"):
-        return -8
-    if m.startswith("pop"):
-        if ops and ops[0].type == x86.X86_OP_REG and ops[0].reg == x86.X86_REG_RSP:
-            return _UNKNOWN  # pop rsp: 스택 피벗
-        return 8
+    if m in _PUSH:
+        return -2 if _opsize16(ins) else -8
+    if m in _POP:
+        if ops and ops[0].type == x86.X86_OP_REG and ops[0].reg in _SP_REGS:
+            return _UNKNOWN  # pop rsp, pop sp: 스택 피벗
+        return 2 if _opsize16(ins) else 8
+    if m == "enter":  # push rbp; mov rbp, rsp; sub rsp, size (중첩 수준 > 0이면 rbp 체인을 더 복사)
+        if _opsize16(ins) or ops[1].imm & 0x1F:
+            return _UNKNOWN
+        return -(8 + (ops[0].imm & 0xFFFF))
+    if m.startswith(_NO_STATIC_RSP):
+        return _UNKNOWN
     rsp_dst = len(ops) == 2 and ops[0].type == x86.X86_OP_REG and ops[0].reg == x86.X86_REG_RSP
     if rsp_dst and m in ("add", "sub") and ops[1].type == x86.X86_OP_IMM:
         return ops[1].imm if m == "add" else -ops[1].imm
@@ -53,8 +69,8 @@ def _rsp_delta(ins) -> int | None:
 
 
 def _ret_adv(ins) -> int | None:
-    """ret 명령의 rsp 증가량: ret 8, ret imm16은 8+imm. retf는 cs까지 꺼내므로 모름."""
-    if ins.id != x86.X86_INS_RET:
+    """ret 명령의 rsp 증가량: ret 8, ret imm16은 8+imm. retf는 cs까지 꺼내고 16비트 ret은 크기가 불확실해 모름."""
+    if ins.id != x86.X86_INS_RET or _opsize16(ins):
         return _UNKNOWN
     return 8 + (ins.operands[0].imm if ins.operands else 0)
 
@@ -212,9 +228,28 @@ class GadgetDB:
         return len(self._by_addr)
 
 
-def compare_ropgadget(gadgets: list[Gadget], rg_output: str) -> dict:
-    """ROPgadget 출력과 교차검증: {'only_ours': [...], 'only_rg': [...], 'both': n}."""
-    raise NotImplementedError("gadgetdb.compare_ropgadget: db 레인(W13)")
+_RG_LINE = re.compile(r"^0x([0-9a-fA-F]+) : (.+)$")
+_RG_INDIRECT_END = re.compile(r"^(ret[fq]?( .*)?|jmp (?!0x).+|call (?!0x).+)$")  # ret(f), jmp·call 레지스터·메모리
+_RG_DIRECT = re.compile(r"^(j\w+|call|loop\w*|xbegin) 0x[0-9a-fA-F]+$")  # 직접 분기(분기 대상이 숫자)
+
+
+def compare_ropgadget(gadgets: list[Gadget], rg_output: str, max_insns: int = 6) -> dict:
+    """ROPgadget 출력과 교차검증: {'only_ours': [...], 'only_rg': [...], 'both': n}.
+
+    주소(가상주소)만 비교한다. rg_output은 `ROPgadget --binary <ELF> --all --depth <n>`의 표준 출력이다.
+    ROPgadget은 syscall·int 0x80으로 끝나는 조각과 직접 분기를 품은 조각도 내므로, 우리 정의(직접 분기 없이
+    간접 분기 ret·jmp*·call*로 끝나는 max_insns개 이하)에 해당하는 줄만 남긴다. 주소 목록은 오름차순이다.
+    """
+    theirs = set()
+    for line in rg_output.splitlines():
+        m = _RG_LINE.match(line.strip())
+        if not m:
+            continue
+        insns = [i.strip() for i in m.group(2).split(" ; ")]
+        if len(insns) <= max_insns and _RG_INDIRECT_END.match(insns[-1]) and not any(map(_RG_DIRECT.match, insns)):
+            theirs.add(int(m.group(1), 16))
+    ours = {g.addr for g in gadgets}
+    return {"only_ours": sorted(ours - theirs), "only_rg": sorted(theirs - ours), "both": len(ours & theirs)}
 
 
 def main() -> int:

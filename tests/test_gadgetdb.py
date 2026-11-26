@@ -50,3 +50,42 @@ def test_save_open_relocates(tmp_path):
     img.modules[0].sha256 = "cd" * 32  # 다른 파일로 만든 DB는 거부
     with pytest.raises(ValueError):
         GadgetDB.open(img, tmp_path)
+
+
+def test_loop_family_is_conditional_branch():
+    """E2 회귀: loop·loope·loopne을 품은 조각은 gadget이 아니다(jrcxz와 같음)."""
+    for op in ("e2", "e1", "e0", "e3"):
+        assert 0x1000 not in {g.addr for g in scan(bytes.fromhex(op + "fec3"), 0x1000)}
+
+
+def test_rsp_delta_edge_instructions():
+    """E3 회귀: popcnt는 pop이 아니고, 16비트 push는 2바이트, enter n,0은 8+n, iretq는 모름."""
+    def first(h):
+        g = {g.addr: g for g in scan(bytes.fromhex(h), 0x1000)}[0x1000]
+        return g.sd, g.adv
+
+    assert first("f3480fb8c3c3") == (0, 8)
+    assert first("6650c3") == (-2, 6)
+    assert first("c8080000c3") == (-16, -8)
+    assert first("48cfc3") == (None, None)
+
+
+def test_compare_ropgadget_filters_to_our_definition():
+    """E4: ROPgadget 줄 중 직접 분기를 품었거나 6개 초과, syscall로 끝나는 것은 대조에서 뺀다."""
+    from ropecker.gadgetdb import compare_ropgadget
+    from ropecker.model import Gadget
+
+    rg = "\n".join([
+        "Gadgets information", "=" * 60,
+        "0x0000000000001000 : pop rdi ; ret",
+        "0x0000000000001001 : ret",
+        "0x0000000000001002 : jmp 0x1100",  # 직접 분기: 제외
+        "0x0000000000001003 : add eax, 1 ; jne 0x1000 ; ret",  # 직접 분기를 품음: 제외
+        "0x0000000000001004 : syscall",  # 끝이 syscall: 제외
+        "0x0000000000001005 : pop rax ; pop rbx ; pop rcx ; pop rdx ; pop rsi ; pop rdi ; ret",  # 7개: 제외
+        "0x0000000000001010 : jmp rax",
+        "Unique gadgets found: 7",
+    ])
+    mk = lambda a, kind: Gadget(a, 1, a, kind, None, None, True, "x")  # noqa: E731
+    res = compare_ropgadget([mk(0x1000, "ret"), mk(0x1001, "ret"), mk(0x1020, "ret")], rg)
+    assert res == {"only_ours": [0x1020], "only_rg": [0x1010], "both": 2}

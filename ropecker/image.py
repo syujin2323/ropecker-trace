@@ -59,7 +59,8 @@ def classify(ins) -> str:
     if iid in (x86.X86_INS_CALL, x86.X86_INS_LCALL):
         direct = len(ins.operands) == 1 and ins.operands[0].type == x86.X86_OP_IMM
         return "call" if direct else "call_ind"
-    if capstone.CS_GRP_JUMP in ins.groups:  # jcc, loop, jrcxz 등 조건 분기
+    # jcc, jrcxz는 JUMP군, loop·loope·loopne은 JUMP군이 아니라 BRANCH_RELATIVE군만 가진다
+    if capstone.CS_GRP_JUMP in ins.groups or capstone.CS_GRP_BRANCH_RELATIVE in ins.groups:
         return "jcc"
     return "other"
 
