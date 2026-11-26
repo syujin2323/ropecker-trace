@@ -1,0 +1,245 @@
+{
+  "id": "E8",
+  "제목": "direct jmp로 두 조각을 이은 gadget 접합",
+  "담당": "심형섭",
+  "작성일": "2026-11-26",
+  "방향": "알려진 한계",
+  "구분": "위반",
+  "입력": "libc ret gadget 10개 + 접합 조각 + ret gadget 10개로 execve에 닿는 체인 두 가지. 접합 조각은 짧은 명령 뒤 직접 jmp로 다른 조각(끝은 ret)에 이어지는 libc의 실제 코드다. (가) 같은 페이지 안의 접합: libc+0x51594 (nop; xor r8d, r8d; jmp libc+0x51590 → mov rax, r8; ret). (나) 페이지를 넘는 접합: libc+0x9805d (mov eax, 0x23; jmp libc+0x97e87 → add rsp, 0x10; pop rbx; ret). jmp의 목적지 libc+0x97e87은 다른 코드 페이지에 있고 그 자체가 gadget 시작 주소다",
+  "기대 결과": "둘 다 탐지(ROP, 연쇄 11 이상)하고 execve 전에 멈춘다. (가) gadget 20개와 접합 조각이 이어진 공격이므로 탐지. (나) 직접 jmp의 목적지가 새 페이지라 거기서 체크포인트가 생기고, 그 지점부터 gadget 11개(목적지 조각 + ret gadget 10개)가 이어지므로 탐지",
+  "근거": "논문 Ⅸ-B(Gadget Gluing Attack): gadget에는 직접 분기가 없다고 가정하므로 직접 분기를 만나면 연쇄 탐지가 멈추고, 현재 ROPecker는 이 공격을 잘 막지 못한다고 적는다(확장안: 직접 분기를 따라가 목적지가 gadget이면 접합된 gadget으로 봄). 우리 정의도 같다(design.md 1절: gadget은 직접 분기 없이 간접 분기로 끝나는 조각, LBR은 간접 분기만 기록). 공격 입력의 기대는 '탐지'로 적고, 놓치면 반례로 기록해 분류한다",
+  "checks": [
+    {
+      "id": "e8-glue-same-page",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "addr": "libc.so.6+0x51594"
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 11,
+        "gadgets_nonempty": true
+      }
+    },
+    {
+      "id": "e8-glue-cross-page",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "addr": "libc.so.6+0x9805d"
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 11,
+        "gadgets_nonempty": true
+      }
+    }
+  ]
+}
