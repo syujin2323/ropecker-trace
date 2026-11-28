@@ -193,7 +193,21 @@
       "pytest": "cases/extra/unit/test_e4_unaligned.py::test_rop_vault_matches_ropgadget",
       "expect": {
         "pass": true
+      },
+      "결과 분석": {
+        "분류": "명세상 미지원",
+        "실제 결과": "ROPgadget 7.7(--all --depth 90)과 rop_vault를 대조하니 공통 84, ROPgadget에만 0, 우리에게만 73. 로그의 실패 지점은 두 번째 assert(우리에게만 73)이고, 첫 assert(ROPgadget에만 0)는 통과했다",
+        "근거": "우리에게만 있는 73개는 모두 끝 명령이 RIP 상대 메모리 간접 분기다. 끝 명령이 PLT(.plt·.plt.sec)의 jmp qword ptr [rip + disp]인 조각 62개(54개는 bnd 접두사)와 _start의 call qword ptr [rip + disp]인 조각 11개다. ROPgadget 출력 전체에 [rip + …]로 끝나는 조각은 하나도 없다. 우리 정의는 메모리 피연산자의 jmp*·call*도 간접 분기로 보므로(design.md 1·4절의 jmp_ind·call_ind) 코드는 정의대로 동작했고 구현 버그가 아니다. 대조 도구가 내지 않는 gadget 유형이라 교차검증에서 다루지 않는 범위로 둔다. '양쪽 주소 집합이 같다'는 기대가 도구 차이를 넘어선 것이었다",
+        "처리": "수정 없음(기대는 그대로 둠). 실행 뒤 포함 관계 check(e4-ropgadget-subset: ROPgadget이 찾은 gadget은 모두 우리 DB에 있다)를 더해 통과를 확인했다. 보완 방법: compare_ropgadget이 RIP 상대 간접 분기로 끝나는 gadget을 따로 세어 빼면, 처음 기대(같은 주소 집합)로 다시 대조할 수 있다"
       }
+    },
+    {
+      "id": "e4-ropgadget-subset",
+      "pytest": "cases/extra/unit/test_e4_unaligned.py::test_ropgadget_is_subset_of_ours",
+      "expect": {
+        "pass": true
+      },
+      "메모": "실행 뒤 추가(기대를 실행 전에 적은 check 아님)"
     }
   ]
 }

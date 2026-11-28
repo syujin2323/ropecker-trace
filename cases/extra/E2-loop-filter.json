@@ -8,6 +8,12 @@
   "입력": "(1) loop·loope·loopne·jrcxz 뒤에 ret이 붙은 바이트열을 DB 생성기(scan)에 넣고, 저장소 DB에 loop 계열 gadget이 있는지 센다. (2) libc의 `loopne X; ret` 조각 하나를 가운데(6번째)에 끼운 ret gadget 12개 연쇄 + execve를 합성 트레이스로 만들어 실행한다",
   "기대 결과": "(1) loop 계열을 품은 조각은 gadget이 아니다(조건 분기, design.md 직접 분기 없음 규칙). jrcxz와 같은 군. 저장소 DB에도 없다. (2) 공격 입력이므로 탐지(ROP)를 기대한다",
   "근거": "논문 V-A·VI-A: gadget은 직접 분기 없이 간접 분기로 끝나는 조각. docs/design.md gadget DB v1. 이슈 #13 6번",
+  "결과 분석": {
+    "분류": "구현 버그",
+    "실제 결과": "수정 전(results/w13/E2-before-fix): 단위 check 2개 실패. DB 생성기가 loop·loope·loopne을 품은 조각을 gadget으로 받았고, 저장소 DB에도 loop 계열을 품은 gadget이 있었다(libc 944개). 합성 연쇄 e2-loop-chain은 ROP(연쇄 12 = 과거 1 + 미래 11, 스텝 3)였는데, 가운데의 loop 조각(libc+0x39f47)까지 gadget으로 센 값이다. 수정 후: 단위 check 2개 통과. 다시 만든 DB에서 loop 계열을 품은 조각이 빠졌다(rop_vault 164 → 157, libc 114,578 → 113,634, ld-linux 10,687 → 10,572). 같은 합성 연쇄는 정상(연쇄 6)으로 바뀌었다(e2-loop-chain의 결과 분석)",
+    "근거": "design.md 1절은 gadget을 직접 분기(jmp/jcc/call) 없이 간접 분기로 끝나는 조각으로 정한다. loop 계열은 rcx를 줄이고 조건에 따라 분기하는 조건 분기다. capstone 5는 jcc·jrcxz에는 JUMP군을 주지만 loop·loope·loopne에는 BRANCH_RELATIVE군만 주는데, image.classify가 JUMP군만 조건 분기로 봐서 loop 계열을 평범한 명령으로 분류했다. 의도한 명세대로 동작하지 않았으므로 구현 버그다(13주차 자료 9쪽의 예 '필터 조건 누락')",
+    "처리": "수정함(PR #17, main 68df42f): classify가 BRANCH_RELATIVE군도 조건 분기(jcc)로 보고, gadget DB 3개를 다시 만들었다. 같은 입력의 수정 전 결과는 results/w13/E2-before-fix/에 있다"
+  },
   "checks": [
     {
       "id": "e2-unit-loop",
@@ -95,6 +101,13 @@
         "verdict": "ROP",
         "chain_len_min": 11,
         "gadgets_nonempty": true
+      },
+      "결과 분석": {
+        "분류": "원논문 한계",
+        "실제 결과": "수정 후 정상(최대 연쇄 6), execve까지 실행. loop 조각 앞의 첫 gadget(스텝 3)에서 과거 1 + 미래 4 = 5, loop 조각(스텝 8)에서 0, 뒤의 첫 gadget(스텝 10)에서 과거 1 + 미래 5 = 6. 수정 전에는 ROP(연쇄 12, 스텝 3에서 중단)",
+        "근거": "가운데의 libc+0x39f47(loopne 0x39f51; ret)은 조건 분기를 품어 gadget이 아니므로 과거·미래 연쇄가 거기서 끊긴다. loopne가 분기하지 않으면(rcx가 1이거나 ZF가 1) 곧바로 ret에 닿으므로 공격자는 이 조각을 gadget처럼 쓸 수 있다. 우리 정의는 논문 정의(직접 분기가 없는 조각)와 같고, 논문 Ⅸ-B는 gadget에 직접 분기가 없다는 가정 때문에 직접 분기를 품은 조각으로 이은 공격(Gadget Gluing)을 현재 ROPecker가 잘 막지 못한다고 적는다. 우리가 다루지 않기로 한 입력이 아니라 원래 방어도 막지 못하는 경우라 원논문 한계로 본다. 수정 전의 탐지는 loop 조각을 gadget으로 잘못 센 버그 덕분이었다",
+        "처리": "수정 없음(한계로 기록). 보완 방법: 논문 Ⅸ-B의 확장안처럼 직접 분기를 품은 조각도 따라가 gadget으로 보는 것(오탐·미탐이 늘 수 있다고 논문이 적음). E8 gadget 접합과 같은 갈래다",
+        "메모": "PR #17에서 김종훈은 '명세상 미지원'을 제안했다. 팀장 검토에서 필터 누락은 구현 버그(사례 전체의 결과 분석), 고친 뒤 드러난 미탐은 원논문 한계로 나눴다"
       }
     }
   ]
