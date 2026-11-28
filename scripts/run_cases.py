@@ -207,10 +207,12 @@ def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path, synth
     from ropecker.extra import params_for, same_spec, trace_header, trace_of
 
     name, exp = chk["id"], chk["expect"]
+    note = f" · {chk['메모']}" if chk.get("메모") else ""  # 예: 실행 뒤 추가한 check임을 표에서 바로 보이게
     if "pytest" in chk:
         run = run_pytest(chk["pytest"], runs, name)
         after, mark, problems = unit_status(run["counts"], exp["pass"])
-        row = {"cond": f"단위 테스트 `{chk['pytest']}`", "before": "—", "expect": f"테스트 {'통과' if exp['pass'] else '실패'}"}
+        cond = f"단위 테스트 `{chk['pytest']}`{note}"
+        row = {"cond": cond, "before": "—", "expect": f"테스트 {'통과' if exp['pass'] else '실패'}"}
         return {**row, "after": after, "mark": mark, "problems": problems, "evidence": [f"[로그]({_rel(run['log'], out)})"]}
 
     trace = trace_of(chk)
@@ -219,7 +221,7 @@ def _extra_check(case: dict, chk: dict, base: dict, runs: Path, out: Path, synth
     cond = f"{'합성' if 'synth' in chk else '수집'} `{name}`"
     if extra := _cond(params, base, args):
         cond += f" ({extra})"
-    row = {"cond": cond, "expect": describe_expect(exp)}
+    row = {"cond": cond + note, "expect": describe_expect(exp)}
     gen = f"`python -m ropecker.synth --extra{synth_hint} --only {case['id']}`"
     if not (ROOT / trace).exists():
         hint = gen if "synth" in chk else "수집 전"
