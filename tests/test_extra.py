@@ -235,6 +235,26 @@ def test_run_extra_lists_counterexamples(tmp_path):
     assert f"⏳ 트레이스 없음(`python -m ropecker.synth --extra --cases {cases.resolve().as_posix()} --only E1`)" in text
 
 
+def test_check_memo_is_shown_in_condition(tmp_path):
+    """check의 메모(예: 실행 뒤 추가한 check)는 표의 '트레이스·조건' 칸에 함께 나온다."""
+    cases = tmp_path / "cases"
+    cases.mkdir()
+    memo = "실행 뒤 추가(기대를 실행 전에 적은 check 아님)"
+    case = _case(
+        id="E1",
+        checks=[
+            {"id": "t-hit", "trace": "traces/extra/ex-ret-11.jsonl.gz", "expect": {"verdict": "ROP"}, "메모": memo},
+            {"id": "t-plain", "trace": "traces/extra/ex-ret-10.jsonl.gz", "expect": {"verdict": "정상"}},
+        ],
+    )
+    (cases / "E1-test.json").write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "out"
+    assert run_cases.main(["--cases", str(cases), "--out", str(out)]) == 0
+    text = (out / "compare.md").read_text(encoding="utf-8")
+    assert f"| 수집 `t-hit` · {memo} |" in text
+    assert "| 수집 `t-plain` |" in text
+
+
 def test_only_requires_cases():
     with pytest.raises(SystemExit):
         run_cases.main(["--only", "E1"])

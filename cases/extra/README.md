@@ -70,6 +70,7 @@ check마다 `id`(영문 소문자·숫자·`-`, 사례 전체에서 겹치지 �
 
 - 트레이스 check는 `trace`와 `synth` 중 **정확히 하나**를 씁니다(둘을 함께 쓰면 수집한 트레이스를 합성으로 덮어쓸 수 있어 막음).
 - 트레이스 check에는 `params`(이 check만 다른 W·T·비교 방식)와 `args`(CLI 옵션 추가, 예: `["--align-check"]`, `["--lbr-depth", "8"]`)를 더할 수 있습니다. `--trace`·`--json`·`--window`·`--threshold`·`--cmp`·`--no-check`·`--verbose`는 실행기가 붙이므로 `args`에 쓰지 않습니다(`--threshold=12`, `--thr` 같은 줄임말도 막음).
+- check에도 `결과 분석`과 `메모`를 쓸 수 있습니다. check의 `메모`는 실행 결과 표의 '트레이스·조건' 칸에 함께 나오므로, 실행 뒤에 더한 check는 `"메모": "실행 뒤 추가(기대를 실행 전에 적은 check 아님)"`처럼 밝혀 둡니다(예: E4 `e4-ropgadget-subset`).
 - 단위 테스트는 기본 `uv run pytest`(tests/만 수집)에 들어가지 않으므로, 버그를 재현하는 실패 테스트를 두어도 CI가 깨지지 않습니다. 실행기는 xfail 표시를 무시하고(`--runxfail`) 실제 통과·실패로 셉니다. skip되거나 준비 중 오류가 나면 판정하지 않고 ⚠️로 둡니다. 저장소 루트는 `from ropecker.synth import ROOT`로 얻습니다(파일을 어디에 두어도 같음).
 
 ### `expect` 키 (판정은 고정 사례와 같은 `ropecker.cases.judge`)
