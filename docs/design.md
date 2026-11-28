@@ -6,7 +6,7 @@
 
 | 용어 | 정의 | 논문 근거 |
 |---|---|---|
-| gadget | 직접 분기(jmp/jcc/call) 없이 간접 분기(ret, jmp*, call*)로 끝나는 명령 **6개 이하** 조각. 코드 섹션의 **모든 바이트 오프셋**에서 시작할 수 있다(비정렬 포함) | VI-A, VII-B |
+| gadget | 직접 분기(jmp, jcc·jrcxz·loop 계열 같은 조건 분기, call) 없이 간접 분기(ret, jmp*, call*)로 끝나는 명령 **6개 이하** 조각. 코드 섹션의 **모든 바이트 오프셋**에서 시작할 수 있다(비정렬 포함) | VI-A, VII-B |
 | 과거 연쇄 | 간접 분기만 남긴 **최근 16개**(LBR 크기)를 최신부터 거꾸로 보며, 분기의 목적지가 gadget인 동안 센 수. gadget이 아닌 목적지에서 멈춘다. 현재 pc의 gadget은 마지막 항목의 목적지로 여기에 들어간다 | II-B, V-C(2) |
 | 미래 연쇄 | 체크포인트 스냅샷(sp, stk)에서 현재 gadget의 ret 슬롯(sp+sd)에 있는 주소를 따라가며, 그 주소가 gadget인 동안 센 수. **현재 gadget 다음부터** 센다. jmp/call gadget이나 sd를 모르는 gadget, 스냅샷 범위 밖에서 멈춘다 | V-C(3) |
 | 체크포인트 연쇄 길이 | 과거 연쇄 길이 + 미래 연쇄 길이 | V-C |
@@ -78,10 +78,10 @@ JSON Lines(.jsonl, gzip 가능). 주소는 모두 `"0x..."` 문자열입니다.
 - `kind`: 끝 분기 종류 `ret` / `jmp_ind`(jmp reg·[mem]) / `call_ind`(call reg·[mem]). 논문의 ret-based / jmp-based 구분
 - `aligned`: 실행 세그먼트 시작부터 선형 디스어셈블(objdump 방식, 디코드 실패는 1바이트 건너뜀)한 명령 경계인지. 논문도 정렬 정보는 선택 사항이며 부정확할 수 있다고 본다(VI-A)
 - `sd`: gadget 시작 rsp → ret 슬롯 거리(바이트), `adv`: 실행 뒤 rsp 변화량. **ret gadget만** 계산하고 jmp/call gadget은 둘 다 null
-  - 명령별 rsp 변화: push −8, pop +8, `add/sub rsp, imm` ±imm, `lea rsp, [rsp+disp]` +disp, rsp를 안 쓰는 명령 0
+  - 명령별 rsp 변화: push −8, pop +8(pushfq·popfq 포함, 이름 전체로 비교하므로 popcnt 같은 명령은 0), 66 접두사(16비트) push·pop ∓2, `enter n, 0` −(8+n), `add/sub rsp, imm` ±imm, `lea rsp, [rsp+disp]` +disp, rsp를 안 쓰는 명령 0 (16비트·enter·popcnt는 13주차 E3에서 고침)
   - `sd` = ret 앞 명령들의 변화량 합, `adv` = `sd` + ret의 증가량(ret 8, `ret imm16`은 8+imm)
   - 예: `ret` (0, 8), `pop rdi; ret` (8, 16), `pop rdi; pop rsi; ret` (16, 24). x86-64라 논문(x86-32)의 4바이트 단위가 아니라 8바이트 단위
-  - rsp를 예측할 수 없으면(leave, `pop rsp`, `mov/xchg rsp`, esp·sp에 쓰기, retf 등 스택 피벗) 둘 다 null. 논문 Table II의 "need emulation"에 해당하고, 미래 연쇄는 여기서 멈춘다
+  - rsp를 예측할 수 없으면(leave, `pop rsp`·16비트 `pop sp`, `mov/xchg rsp`, esp·sp에 쓰기 같은 스택 피벗, 중첩·16비트 `enter`, iret·sysret·sysexit, 16비트 ret, retf) 둘 다 null. 논문 Table II의 "need emulation"에 해당하고, 미래 연쇄는 여기서 멈춘다. retf는 RIP와 함께 CS를 꺼내 코드 세그먼트를 바꿀 수 있어 다루지 않는다(13주차 E3, 명세상 미지원)
 
 ## 5. 결과 v1
 

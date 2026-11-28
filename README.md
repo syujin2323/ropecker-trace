@@ -32,7 +32,7 @@
 git clone https://github.com/syujin2323/ropecker-trace.git
 cd ropecker-trace
 uv sync          # Python 3.11 + capstone, pyelftools, pytest (uv.lock 그대로)
-uv run pytest    # 103 passed, 2 skipped (실제로 수집하지 않은 경계 트레이스 2개는 skip)
+uv run pytest    # 157 passed, 2 skipped (실제로 수집하지 않은 경계 트레이스 2개는 skip)
 ```
 
 - Windows PowerShell에서 한글이 깨지면 먼저 `$env:PYTHONUTF8 = "1"`을 실행합니다(CI도 같은 설정).
@@ -125,16 +125,16 @@ uv run python scripts/run_cases.py --cases cases/extra              # 전체 →
 | `synth.py` 합성 트레이스 4개(동결 사례 기준) | infra | ✅ M0 | — |
 | `target/` 빌드·sysroot | infra | ✅ M0 | — |
 | `collect/` 수집 이미지·`gdb_trace.py` | collect | ✅ 정상·위반 입력 실제 트레이스(재수집 시 같은 파일) | W12 (11/23) |
-| `gadgetdb.py` gadget DB (`python -m ropecker.gadgetdb` → `data/gadgets/` 3개) | db | ✅ scan·build·save·GadgetDB · ⬜ ROPgadget 교차검증 함수 | W12 (W13) |
+| `gadgetdb.py` gadget DB (`python -m ropecker.gadgetdb` → `data/gadgets/` 3개) | db | ✅ scan·build·save·GadgetDB · ✅ ROPgadget 교차검증 `compare_ropgadget`(E4) · loop 계열 필터·rsp 변화 계산 수정(E2·E3) | W12 (W13) |
 | `lbr.py`·`past.py` 과거 연쇄 (최근 16개, ret 우선) | past | ✅ | W12 |
 | `window.py`·`future.py` 윈도·미래 연쇄 (ret만) | future | ✅ LRU 윈도·위험 syscall 체크포인트·ret 미래 연쇄 · ⬜ jmp gadget 에뮬레이션 | W12 (W13) |
 | `detector.py` 통합 판정 | past·infra | ✅ (모든 레인 연결, 결과 `stubs` 빈 목록) | W12 |
 | `scripts/run_cases.py` 보호 적용 전·후 비교표, CLI 판정 로그(`--verbose`) | infra | ✅ 적용 전·후 비교표(적용 후 판정 일치 6 · 미구현 0)·판정 로그 | W12 |
 | `cases/extra`·`extra.py` 추가 사례 형식·검사, `synth.py --extra` 합성 스펙, `run_cases.py --cases` 실행·반례 목록 | infra | ✅ | W13 (11/24) |
-| 추가 사례 E1~E12 실행·반례 분류 | all | ⏳ 이슈 #13 | W13 (11/30) |
+| 추가 사례 E1~E12 실행·반례 분류 | all | ⏳ E2~E4·E6~E8 실행·분류(수정 뒤 반례 5, 고친 구현 버그 2) · ⬜ E1·E5·E9~E12 (이슈 #13) | W13 (11/30) |
 | `experiments/` 14주차 실험(주 T=5~17, 보조 W) | any | ✅ 계획 초안(`experiments/README.md`, 11/29 확정) · ⬜ `sweep.py` | W14 |
 
-레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 미구현이면 xfail로 표시되고, 구현이 들어오면 저절로 pass/fail로 바뀝니다. 모든 레인이 구현되어 xfail은 없습니다(11/24 기준 `uv run pytest`: 103 passed, 2 skipped — 실제 수집하지 않은 경계 트레이스 2개, 13주차 E1에서 수집 예정). 추가 사례 형식 검사는 `tests/test_extra.py`가 합니다.
+레인별 계약 예시 테스트(`tests/test_<모듈>.py`)는 미구현이면 xfail로 표시되고, 구현이 들어오면 저절로 pass/fail로 바뀝니다. 모든 레인이 구현되어 xfail은 없습니다(11/28 기준 `uv run pytest`: 157 passed, 2 skipped — 실제 수집하지 않은 경계 트레이스 2개, 13주차 E1에서 수집 예정). 추가 사례 형식 검사는 `tests/test_extra.py`가 합니다.
 
 ## 저장소 구조
 
