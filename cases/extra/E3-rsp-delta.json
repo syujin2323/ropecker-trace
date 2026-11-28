@@ -8,6 +8,13 @@
   "입력": "rsp를 건드리는 명령 뒤에 ret이 붙은 바이트열(popcnt, push ax·pop ax·pushfw·popfw·push imm16·push fs, enter n,0과 n,1, pop sp, iretq·sysretq, 16비트 ret)을 DB 생성기에 넣어 sd·adv를 본다. 정상 코드의 명령 해석이므로 구분은 '정상'",
   "기대 결과": "popcnt는 rsp 불변(sd 0·adv 8), 16비트 push/pop은 ±2바이트, 64비트 push fs는 8바이트, enter n,0은 8+n바이트 내림, 그 밖의 중첩 enter·pop sp·iretq·sysretq·16비트 ret은 정적으로 모르므로 None(논문 Table II need emulation)",
   "근거": "논문 VI-A Table II, docs/design.md 'sd·adv'. PR #8 리뷰 지적. 이슈 #13 7번",
+  "결과 분석": {
+    "분류": "구현 버그",
+    "실제 결과": "수정 전(results/w13/E3-before-fix): 단위 check 8개 중 7개 실패, 64비트 push/pop(e3-64bit-same)만 통과. (sd, adv)가 popcnt; ret (8, 16), push ax; ret (−8, 0), enter 8, 0; ret (0, 8)이었고, 중첩 enter·16비트 pop sp·iretq는 null이어야 하는데 값이 나왔으며, 16비트 ret의 adv가 8이었다. 수정 후 8개 모두 통과",
+    "근거": "_rsp_delta가 명령 이름의 접두사로 push·pop을 가려 popcnt를 pop(+8)으로 셌고, 66 접두사(16비트 피연산자)를 보지 않아 16비트 push·pop·ret을 8바이트로 셌으며, enter·iretq처럼 rsp를 바꾸는 명령을 rsp 불변(0)으로 셌다. 16비트 pop sp도 스택 피벗으로 보지 않았다. design.md 4절의 sd·adv(실제 rsp 변화량, 모르면 null — 논문 Table II의 need emulation)대로 동작하지 않았으므로 구현 버그다",
+    "처리": "수정함(PR #17, main 68df42f): push·pop을 이름 전체로 비교하고, 66 접두사면 ∓2바이트, enter n, 0은 −(8+n)으로 센다. 중첩·16비트 enter, iret·sysret·sysexit, 16비트 ret은 null로 둔다. gadget DB 3개를 다시 만들었다(이 수정은 gadget 수를 바꾸지 않고 sd·adv 값만 바꾼다). 같은 입력의 수정 전 결과는 results/w13/E3-before-fix/에 있다",
+    "메모": "PR #8 리뷰 4건 중 'retf로 끝나는 gadget의 adv가 없음'은 check로 만들지 않았다(김종훈이 리뷰 원문을 찾지 못해 코드에서 재현되는 4종으로 구성, PR #17). 지금도 retf·retfq로 끝나는 gadget(libc 8,685개, ld-linux 845개, rop_vault 1개)은 sd·adv가 null이다. far return은 RIP와 함께 CS를 꺼내 코드 세그먼트를 바꿀 수 있어 design.md 4절이 스택 피벗과 같은 need emulation으로 정했고, 미래 연쇄는 거기서 멈춘다. 다루지 않기로 한 gadget 유형이므로 명세상 미지원(남은 한계)으로 기록한다. 합성 스펙의 pick도 retf gadget을 고르지 않는다(design.md 8절)"
+  },
   "checks": [
     {
       "id": "e3-popcnt",
