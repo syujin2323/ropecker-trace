@@ -5,9 +5,9 @@
   "작성일": "2026-11-26",
   "방향": "자원 고갈",
   "구분": "경계",
-  "입력": "LBR 상한 16보다 긴 ret 체인 두 가지. (가) libc ret gadget 25개를 서로 다른 코드 페이지에서 이어 execve에 닿는 체인. (나) vuln과 같은 페이지(윈도 안이라 체크포인트가 생기지 않음)의 rop_vault ret gadget 18개 뒤에 libc ret gadget 1개를 거쳐 execve에 닿는 체인. 체크포인트가 체인 끝에만 생겨 미래 연쇄 없이 과거 연쇄만 남는다. (나)는 같은 입력을 T=11·16·17과 LBR 깊이 32(--lbr-depth 32)로 본다",
-  "기대 결과": "(가) 탐지. 첫 gadget 진입(스텝 3)에서 과거 1 + 미래 24 = 연쇄 25로 ROP. 체인이 16개보다 길어도 미래 연쇄가 세므로 LBR 상한의 영향을 받지 않는다. (나) 실제로 이어진 gadget은 19개지만 과거 연쇄는 LBR 상한 16에서 멈춘다. T=11과 T=16에서는 ROP(연쇄 16 = 과거 16 + 미래 0, libc gadget에 들어가는 스텝 21), T=17에서는 정상(연쇄 16 < 17, execve까지 실행). LBR 깊이를 32로 늘리면 T=17에서도 ROP(과거 19)",
-  "근거": "과거 연쇄는 최근 간접 분기 16개까지만 본다(논문 Ⅱ-B: LBR 16쌍, 가득 차면 옛 기록을 덮어씀. Ⅴ-C(2): 그래서 전체 분기 기록을 얻지 못해 미래 연쇄가 필요함. design.md 1절). 논문 Ⅶ-A의 권장 임계값은 11~16이라 T=17은 권장 범위 밖이다. experiments/README.md 실험 1의 가설(과거 연쇄만으로는 T ≥ 17에서 탐지할 수 없다)을 미리 확인하는 입력이다",
+  "입력": "LBR 상한 16보다 긴 ret 체인 두 가지. (가) libc ret gadget 25개를 서로 다른 코드 페이지에서 이어 execve에 닿는 체인. (나) vuln과 같은 페이지(윈도 안이라 체크포인트가 생기지 않음)의 rop_vault ret gadget 18개 뒤에 libc ret gadget 1개를 거쳐 execve에 닿는 체인. 체크포인트가 체인 끝에만 생겨 미래 연쇄 없이 과거 연쇄만 남는다. (나)는 같은 입력을 T=11·16·17과 LBR 깊이 32(--lbr-depth 32)로 본다 / 미래 상한(김수영): libc ret gadget 70개를 서로 다른 코드 페이지에서 이어 execve에 닿는 체인 두 가지. (다) 스택 스냅샷을 128 qword로 늘려 미래 연쇄 상한 64(future.py max_len)가 먼저 걸리게 함. (라) 같은 체인을 기본 스냅샷 32 qword(수집기와 같음)로 봄",
+  "기대 결과": "(가) 탐지. 첫 gadget 진입(스텝 3)에서 과거 1 + 미래 24 = 연쇄 25로 ROP. 체인이 16개보다 길어도 미래 연쇄가 세므로 LBR 상한의 영향을 받지 않는다. (나) 실제로 이어진 gadget은 19개지만 과거 연쇄는 LBR 상한 16에서 멈춘다. T=11과 T=16에서는 ROP(연쇄 16 = 과거 16 + 미래 0, libc gadget에 들어가는 스텝 21), T=17에서는 정상(연쇄 16 < 17, execve까지 실행). LBR 깊이를 32로 늘리면 T=17에서도 ROP(과거 19) / 미래 상한(김수영): 둘 다 탐지. (다) 첫 gadget 진입(스텝 3)에서 미래 연쇄가 상한 64에서 멈춰 과거 1 + 미래 64 = 연쇄 65로 ROP(실제 체인은 70개). (라) 스냅샷에 담긴 다음 주소 32개까지만 따라가므로 과거 1 + 미래 32 = 연쇄 33으로 ROP. 두 상한(64·32) 모두 권장 T(11~16)보다 훨씬 커서 탐지에는 영향이 없다",
+  "근거": "과거 연쇄는 최근 간접 분기 16개까지만 본다(논문 Ⅱ-B: LBR 16쌍, 가득 차면 옛 기록을 덮어씀. Ⅴ-C(2): 그래서 전체 분기 기록을 얻지 못해 미래 연쇄가 필요함. design.md 1절). 논문 Ⅶ-A의 권장 임계값은 11~16이라 T=17은 권장 범위 밖이다. experiments/README.md 실험 1의 가설(과거 연쇄만으로는 T ≥ 17에서 탐지할 수 없다)을 미리 확인하는 입력이다 / 미래 상한: future.future_chain의 max_len 64는 스택 값이 되풀이될 때의 안전 장치이고, 스냅샷 크기 32는 수집기 기본값이다(design.md 3절). 논문은 미래 연쇄를 스택 내용으로 따라가며(Ⅴ-C(3)) 연쇄가 T를 넘으면 바로 판정하므로 상한은 T보다 크기만 하면 된다",
   "checks": [
     {
       "id": "e6-lbr-ret25",
@@ -745,6 +745,737 @@
         "past_len": 19,
         "future_len": 0,
         "detect_step_max": 21
+      }
+    },
+    {
+      "id": "e6-future-cap64",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve",
+        "stack_qwords": 128
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len": 65,
+        "past_len": 1,
+        "future_len": 64,
+        "detect_step_max": 3
+      }
+    },
+    {
+      "id": "e6-future-snapshot32",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "execve"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len": 33,
+        "past_len": 1,
+        "future_len": 32,
+        "detect_step_max": 3
       }
     }
   ],

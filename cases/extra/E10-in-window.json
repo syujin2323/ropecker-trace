@@ -1,0 +1,211 @@
+{
+  "id": "E10",
+  "제목": "윈도 안 gadget만 쓰고 위험 syscall이 없는 체인",
+  "담당": "김수영",
+  "작성일": "2026-11-28",
+  "방향": "알려진 한계",
+  "구분": "위반",
+  "입력": "(가) vuln과 같은 rop_vault 코드 페이지(이미 윈도 안)의 ret gadget 12개만 이어 위험 syscall 없이 끝나는 체인. (나) (가)의 끝에 libc ret gadget 1개(새 페이지)를 더해 윈도 밖으로 한 번 나가는 체인",
+  "기대 결과": "둘 다 공격 입력이므로 탐지(ROP). 우리 구현의 예상: (가) 체크포인트가 트레이스 첫 스텝(vuln 페이지 진입, 연쇄 0) 하나뿐이라 놓칠 것으로 예상(놓치면 반례). (나) libc gadget에 들어가는 스텝 15에서 과거 연쇄가 rop_vault gadget 12개 + libc gadget 1개 = 13을 세어 ROP",
+  "근거": "체크포인트는 윈도 밖 페이지 진입과 위험 syscall에서만 생긴다(논문 Ⅴ-B, design.md 1절). 논문 Ⅸ-D는 윈도 안 코드만으로 만든 gadget 체인을 ROPecker가 검사할 기회가 없다고 인정하고, 윈도가 작아(8~16KB) 쓸 만한 gadget이 적다는 점을 근거로 든다. rop_vault의 실행 코드는 한 페이지뿐이고 그 안의 ret gadget은 12개다(gadget DB)",
+  "checks": [
+    {
+      "id": "e10-in-window-only",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          }
+        ],
+        "ending": "none"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 11
+      }
+    },
+    {
+      "id": "e10-in-window-then-libc",
+      "synth": {
+        "chain": [
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$",
+              "module": "rop_vault"
+            },
+            "page": "same"
+          },
+          {
+            "pick": {
+              "asm": "^ret$"
+            }
+          }
+        ],
+        "ending": "none"
+      },
+      "expect": {
+        "verdict": "ROP",
+        "chain_len_min": 13,
+        "detect_step_max": 15
+      }
+    }
+  ]
+}
